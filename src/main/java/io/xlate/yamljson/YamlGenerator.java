@@ -12,7 +12,7 @@ import java.util.Deque;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.StreamDataWriter;
@@ -93,11 +93,11 @@ class YamlGenerator implements JsonGenerator {
         emitScalar(value, forcePlain, quoteChecker::needToQuoteValue);
     }
 
-    void emitScalar(Object value, Function<String, Boolean> quoteCheck) {
+    void emitScalar(Object value, Predicate<String> quoteCheck) {
         emitScalar(value, false, quoteCheck);
     }
 
-    void emitScalar(Object value, boolean forcePlain, Function<String, Boolean> quoteCheck) {
+    void emitScalar(Object value, boolean forcePlain, Predicate<String> quoteCheck) {
         final String scalarValue;
         final ScalarStyle style;
 
@@ -120,7 +120,7 @@ class YamlGenerator implements JsonGenerator {
                 style = ScalarStyle.SINGLE_QUOTED;
             } else if (containsSingleQuote) {
                 style = ScalarStyle.DOUBLE_QUOTED;
-            } else if (quoteCheck.apply(scalarValue).booleanValue()) {
+            } else if (quoteCheck.test(scalarValue)) {
                 style = ScalarStyle.SINGLE_QUOTED;
             } else {
                 style = ScalarStyle.PLAIN;
