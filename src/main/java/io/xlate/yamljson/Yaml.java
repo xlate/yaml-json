@@ -23,6 +23,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Map;
 
+import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonReaderFactory;
 import jakarta.json.JsonWriter;
@@ -51,14 +54,16 @@ import jakarta.json.stream.JsonParserFactory;
  *
  * <pre>
  * <code>
- * StringReader reader = new StringReader("[]");
- * JsonParser parser = Json.createParser(reader);
+ * StringReader reader = new StringReader("---\nkey: value\n");
+ * JsonParser parser = Yaml.createParser(reader);
  * </code>
  * </pre>
  *
  * <p>
  * All the methods in this class are safe for use by multiple concurrent
  * threads.
+ *
+ * @see jakarta.json.Json
  */
 public final class Yaml {
 
@@ -72,13 +77,31 @@ public final class Yaml {
     }
 
     /**
+     * Creates a YAML parser from a character stream.
+     *
+     * @param reader
+     *            i/o reader from which JSON is to be read
+     * @return a YAML parser
+     *
      * @see jakarta.json.Json#createParser(Reader)
+     *
      */
     public static JsonParser createParser(Reader reader) {
         return provider().createParser(reader);
     }
 
     /**
+     * Creates a YAML parser from a byte stream. The character encoding of the
+     * stream is determined as specified in
+     * <a href="http://tools.ietf.org/rfc/rfc7159.txt">RFC 7159</a>.
+     *
+     * @param in
+     *            i/o stream from which YAML is to be read
+     * @throws JsonException
+     *             if encoding cannot be determined or i/o error (IOException
+     *             would be cause of JsonException)
+     * @return a YAML parser
+     *
      * @see jakarta.json.Json#createParser(InputStream)
      */
     public static JsonParser createParser(InputStream in) {
@@ -86,6 +109,12 @@ public final class Yaml {
     }
 
     /**
+     * Creates a YAML generator for writing YAML to a character stream.
+     *
+     * @param writer
+     *            a i/o writer to which YAML is written
+     * @return a YAML generator
+     *
      * @see jakarta.json.Json#createGenerator(Writer)
      */
     public static JsonGenerator createGenerator(Writer writer) {
@@ -93,6 +122,12 @@ public final class Yaml {
     }
 
     /**
+     * Creates a YAML generator for writing YAML to a byte stream.
+     *
+     * @param out
+     *            i/o stream to which YAML is written
+     * @return a YAML generator
+     *
      * @see jakarta.json.Json#createGenerator(OutputStream)
      */
     public static JsonGenerator createGenerator(OutputStream out) {
@@ -100,6 +135,17 @@ public final class Yaml {
     }
 
     /**
+     * Creates a parser factory for creating {@link JsonParser} objects (for
+     * parsing YAML). The factory is configured with the specified map of
+     * provider specific configuration properties. Provider implementations
+     * should ignore any unsupported configuration properties specified in the
+     * map.
+     *
+     * @param config
+     *            a map of provider specific properties to configure the YAML
+     *            parsers. The map may be empty or null
+     * @return YAML parser factory
+     *
      * @see jakarta.json.Json#createParserFactory(Map)
      */
     public static JsonParserFactory createParserFactory(Map<String, ?> config) {
@@ -107,6 +153,17 @@ public final class Yaml {
     }
 
     /**
+     * Creates a generator factory for creating {@link JsonGenerator} objects
+     * (for generating YAML). The factory is configured with the specified map
+     * of provider specific configuration properties. Provider implementations
+     * should ignore any unsupported configuration properties specified in the
+     * map.
+     *
+     * @param config
+     *            a map of provider specific properties to configure the YAML
+     *            generators. The map may be empty or null
+     * @return YAML generator factory
+     *
      * @see jakarta.json.Json#createGeneratorFactory(Map)
      */
     public static JsonGeneratorFactory createGeneratorFactory(Map<String, ?> config) {
@@ -114,6 +171,14 @@ public final class Yaml {
     }
 
     /**
+     * Creates a YAML writer to write a JSON {@link JsonObject object} or
+     * {@link JsonArray array} structure to the specified character stream as
+     * YAML.
+     *
+     * @param writer
+     *            to which JSON object or array is written
+     * @return a YAML writer
+     *
      * @see jakarta.json.Json#createWriter(Writer)
      */
     public static JsonWriter createWriter(Writer writer) {
@@ -121,6 +186,15 @@ public final class Yaml {
     }
 
     /**
+     * Creates a YAML writer to write a JSON {@link JsonObject object} or
+     * {@link JsonArray array} structure to the specified byte stream as YAML.
+     * Characters written to the stream are encoded into bytes using UTF-8
+     * encoding.
+     *
+     * @param out
+     *            to which JSON object or array is written
+     * @return a YAML writer
+     *
      * @see jakarta.json.Json#createWriter(OutputStream)
      */
     public static JsonWriter createWriter(OutputStream out) {
@@ -128,6 +202,12 @@ public final class Yaml {
     }
 
     /**
+     * Creates a YAML reader from a character stream.
+     *
+     * @param reader
+     *            a reader from which YAML is to be read
+     * @return a YAML reader
+     *
      * @see jakarta.json.Json#createReader(Reader)
      */
     public static JsonReader createReader(Reader reader) {
@@ -135,6 +215,14 @@ public final class Yaml {
     }
 
     /**
+     * Creates a YAML reader from a byte stream. The character encoding of the
+     * stream is determined as described in
+     * <a href="http://tools.ietf.org/rfc/rfc7159.txt">RFC 7159</a>.
+     *
+     * @param in
+     *            a byte stream from which YAML is to be read
+     * @return a YAML reader
+     *
      * @see jakarta.json.Json#createReader(InputStream)
      */
     public static JsonReader createReader(InputStream in) {
@@ -142,6 +230,17 @@ public final class Yaml {
     }
 
     /**
+     * Creates a reader factory for creating {@link JsonReader} objects (for
+     * reading YAML). The factory is configured with the specified map of
+     * provider specific configuration properties. Provider implementations
+     * should ignore any unsupported configuration properties specified in the
+     * map.
+     *
+     * @param config
+     *            a map of provider specific properties to configure the YAML
+     *            readers. The map may be empty or null
+     * @return a YAML reader factory
+     *
      * @see jakarta.json.Json#createReaderFactory(Map)
      */
     public static JsonReaderFactory createReaderFactory(Map<String, ?> config) {
@@ -149,6 +248,17 @@ public final class Yaml {
     }
 
     /**
+     * Creates a writer factory for creating {@link JsonWriter} objects (for
+     * writing YAML). The factory is configured with the specified map of
+     * provider specific configuration properties. Provider implementations
+     * should ignore any unsupported configuration properties specified in the
+     * map.
+     *
+     * @param config
+     *            a map of provider specific properties to configure the YAML
+     *            writers. The map may be empty or null
+     * @return a YAML writer factory
+     *
      * @see jakarta.json.Json#createWriterFactory(Map)
      */
     public static JsonWriterFactory createWriterFactory(Map<String, ?> config) {

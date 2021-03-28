@@ -163,6 +163,44 @@ final class YamlParser implements JsonParser, JsonLocation {
         }
     }
 
+    void enqueueZeroPrefixedValue(String dataText) {
+        if (YamlNumbers.isOctal(dataText)) {
+            enqueue(Event.VALUE_NUMBER, NumberType.OCTAL, dataText);
+        } else if (YamlNumbers.isHexadecimal(dataText)) {
+            enqueue(Event.VALUE_NUMBER, NumberType.HEXADECIMAL, dataText);
+        } else {
+            enqueueNumberOrString(dataText);
+        }
+    }
+
+    void enqueueDotPrefixedValue(String dataText) {
+        if (VALUES_INFINITY.contains(dataText)) {
+            enqueue(Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
+        } else if (VALUES_NAN.contains(dataText)) {
+            enqueue(Event.VALUE_STRING, NumberType.NAN, dataText);
+        } else if (YamlNumbers.isFloat(dataText)) {
+            enqueue(Event.VALUE_NUMBER, NumberType.FLOAT, dataText);
+        } else {
+            enqueue(Event.VALUE_STRING, dataText);
+        }
+    }
+
+    void enqueuePlusPrefixedValue(String dataText) {
+        if (VALUES_INFINITY.contains(dataText)) {
+            enqueue(Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
+        } else {
+            enqueueNumberOrString(dataText);
+        }
+    }
+
+    void enqueueMinusPrefixedValue(String dataText) {
+        if (VALUES_INFINITY.contains(dataText)) {
+            enqueue(Event.VALUE_STRING, NumberType.NEGATIVE_INFINITY, dataText);
+        } else {
+            enqueueNumberOrString(dataText);
+        }
+    }
+
     void enqueueDataElement(final String dataText) {
         switch (dataText.charAt(0)) {
         case 'n':
@@ -182,14 +220,7 @@ final class YamlParser implements JsonParser, JsonLocation {
             break;
 
         case '0':
-            if (YamlNumbers.isOctal(dataText)) {
-                enqueue(Event.VALUE_NUMBER, NumberType.OCTAL, dataText);
-            } else if (YamlNumbers.isHexadecimal(dataText)) {
-                enqueue(Event.VALUE_NUMBER, NumberType.HEXADECIMAL, dataText);
-            } else {
-                enqueueNumberOrString(dataText);
-            }
-
+            enqueueZeroPrefixedValue(dataText);
             break;
 
         case '1':
@@ -205,34 +236,15 @@ final class YamlParser implements JsonParser, JsonLocation {
             break;
 
         case '.':
-            if (VALUES_INFINITY.contains(dataText)) {
-                enqueue(Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
-            } else if (VALUES_NAN.contains(dataText)) {
-                enqueue(Event.VALUE_STRING, NumberType.NAN, dataText);
-            } else if (YamlNumbers.isFloat(dataText)) {
-                enqueue(Event.VALUE_NUMBER, NumberType.FLOAT, dataText);
-            } else {
-                enqueue(Event.VALUE_STRING, dataText);
-            }
-
+            enqueueDotPrefixedValue(dataText);
             break;
 
         case '+':
-            if (VALUES_INFINITY.contains(dataText)) {
-                enqueue(Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
-            } else {
-                enqueueNumberOrString(dataText);
-            }
-
+            enqueuePlusPrefixedValue(dataText);
             break;
 
         case '-':
-            if (VALUES_INFINITY.contains(dataText)) {
-                enqueue(Event.VALUE_STRING, NumberType.NEGATIVE_INFINITY, dataText);
-            } else {
-                enqueueNumberOrString(dataText);
-            }
-
+            enqueueMinusPrefixedValue(dataText);
             break;
 
         default:

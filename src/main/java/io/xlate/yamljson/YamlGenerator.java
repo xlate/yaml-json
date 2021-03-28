@@ -59,7 +59,7 @@ class YamlGenerator implements JsonGenerator {
     static final Event SEQUENCE_START = new SequenceStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO);
     static final Event SEQUENCE_END = new SequenceEndEvent();
 
-    static final StringQuotingChecker quoteChecker = StringQuotingChecker.Default.instance();
+    static final StringQuotingChecker quoteChecker = new StringQuotingChecker();
 
     final Closeable writer;
     final StreamDataWriter yamlWriter;

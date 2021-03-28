@@ -36,6 +36,11 @@ import jakarta.json.stream.JsonGeneratorFactory;
 import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParserFactory;
 
+/**
+ * Extension of {@link JsonProvider} providing access to YAML processing
+ * objects. This provider will NOT be made available via the service loader
+ * mechanism to avoid conflicts with other JSON providers available.
+ */
 public final class YamlProvider extends JsonProvider {
 
     private final JsonParserFactory defaultParserFactory = new YamlParserFactory();
