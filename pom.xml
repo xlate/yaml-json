@@ -4,7 +4,7 @@
 
   <groupId>io.xlate</groupId>
   <artifactId>yaml-json</artifactId>
-  <version>0.0.2-SNAPSHOT</version>
+  <version>0.0.3-SNAPSHOT</version>
 
   <name>yaml-json : JSON API for YAML</name>
   <description>Read and write YAML in Java using the Jakarta JSON API</description>
