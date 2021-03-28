@@ -2,6 +2,11 @@ package io.xlate.yamljson;
 
 final class YamlNumbers {
 
+    // Canonical forms per YAML 1.2 Core Schema - https://yaml.org/spec/1.2/spec.html#id2804092
+    static final String CANONICAL_POSITIVE_INFINITY = ".inf";
+    static final String CANONICAL_NEGATIVE_INFINITY = "-.inf";
+    static final String CANONICAL_NAN = ".nan";
+
     private YamlNumbers() {
     }
 

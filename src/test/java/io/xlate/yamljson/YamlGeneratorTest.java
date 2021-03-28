@@ -91,6 +91,9 @@ class YamlGeneratorTest {
                     .write("100", "Numeric key")
                     .write("empty", "")
                     .write("blank", " ")
+                    .write("positiveInfinity", Double.POSITIVE_INFINITY)
+                    .write("negativeInfinity", Double.NEGATIVE_INFINITY)
+                    .write("NaN", Double.NaN)
                 .writeEnd()
             .writeEnd();
         }
@@ -110,7 +113,10 @@ class YamlGeneratorTest {
                 + "  SingleQuoted: 'Contains only \"'\n"
                 + "  '100': Numeric key\n"
                 + "  empty: ''\n"
-                + "  blank: ' '\n",
+                + "  blank: ' '\n"
+                + "  positiveInfinity: .inf\n"
+                + "  negativeInfinity: -.inf\n"
+                + "  NaN: .nan\n",
                 new String(stream.toByteArray()));
     }
 

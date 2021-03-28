@@ -327,7 +327,16 @@ class YamlGenerator implements JsonGenerator {
 
     @Override
     public JsonGenerator write(double value) {
-        emitScalar(value);
+        if (Double.POSITIVE_INFINITY == value) {
+            emitScalar((Object) YamlNumbers.CANONICAL_POSITIVE_INFINITY);
+        } else if (Double.NEGATIVE_INFINITY == value) {
+            emitScalar((Object) YamlNumbers.CANONICAL_NEGATIVE_INFINITY);
+        } else if (Double.isNaN(value)) {
+            emitScalar((Object) YamlNumbers.CANONICAL_NAN);
+        } else {
+            emitScalar(value);
+        }
+
         return this;
     }
 

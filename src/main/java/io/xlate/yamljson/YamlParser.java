@@ -69,8 +69,12 @@ final class YamlParser implements JsonParser, JsonLocation {
     static final Set<String> VALUES_NULL = Set.of("null", "Null", "NULL", "~");
     static final Set<String> VALUES_TRUE = Set.of("true", "True", "TRUE");
     static final Set<String> VALUES_FALSE = Set.of("false", "False", "FALSE");
-    static final Set<String> VALUES_INFINITY = Set.of(".inf", ".Inf", ".INF", "+.inf", "+.Inf", "+.INF", "-.inf", "-.Inf", "-.INF");
-    static final Set<String> VALUES_NAN = Set.of(".nan", ".NaN", ".NAN");
+    // @formatter:off
+    static final Set<String> VALUES_INFINITY = Set.of(YamlNumbers.CANONICAL_POSITIVE_INFINITY, ".Inf", ".INF", // Positive infinity
+                                                      "+.inf", "+.Inf", "+.INF", // Explicit positive infinity
+                                                      YamlNumbers.CANONICAL_NEGATIVE_INFINITY, "-.Inf", "-.INF"); // Negative Infinity
+    // @formatter:on
+    static final Set<String> VALUES_NAN = Set.of(YamlNumbers.CANONICAL_NAN, ".NaN", ".NAN");
 
     final Reader yamlSource;
     final Iterator<org.snakeyaml.engine.v2.events.Event> yamlEvents;
