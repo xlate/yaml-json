@@ -27,7 +27,7 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
     YamlParserFactory(Map<String, ?> properties) {
         this.properties = properties;
-        this.parse = new Parse(buildLoadSettings(properties));;
+        this.parse = new Parse(buildLoadSettings(properties));
     }
 
     private YamlParser createYamlParser(Reader reader) {
