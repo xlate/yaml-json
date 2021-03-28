@@ -17,10 +17,10 @@
  */
 
 /**
- * yaml-json-api is an API to read and write YAML in Java using the Jakarta JSON API
+ * yaml-json is an API to read and write YAML in Java using the Jakarta JSON API
  *
  * @author Michael Edgar
- * @see <a href="https://github.com/xlate/yaml-json-api" target="_blank">yaml-json-api on GitHub</a>
+ * @see <a href="https://github.com/xlate/yaml-json" target="_blank">yaml-json on GitHub</a>
  */
 module io.xlate.yamljson {
 

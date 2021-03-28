@@ -86,22 +86,18 @@ class YamlGenerator implements JsonGenerator {
     }
 
     void emitScalar(Object value) {
-        emitScalar(value, quoteChecker::needToQuoteValue);
+        emitScalar(value, true, null);
     }
 
-    void emitScalar(Object value, boolean forcePlain) {
-        emitScalar(value, forcePlain, quoteChecker::needToQuoteValue);
-    }
-
-    void emitScalar(Object value, Predicate<String> quoteCheck) {
-        emitScalar(value, false, quoteCheck);
+    void emitScalar(String value) {
+        emitScalar(value, false, quoteChecker::needToQuoteValue);
     }
 
     void emitScalar(Object value, boolean forcePlain, Predicate<String> quoteCheck) {
         final String scalarValue;
         final ScalarStyle style;
 
-        if (forcePlain || value == null) {
+        if (forcePlain) {
             // TODO Allow configuration of null output - null/Null/NULL/~
             scalarValue = String.valueOf(value);
             style = ScalarStyle.PLAIN;
@@ -151,7 +147,7 @@ class YamlGenerator implements JsonGenerator {
     public JsonGenerator writeKey(String name) {
         Objects.requireNonNull(name, "name");
         assertObjectContext();
-        emitScalar(name, quoteChecker::needToQuoteName);
+        emitScalar(name, false, quoteChecker::needToQuoteName);
         return this;
     }
 
@@ -254,7 +250,7 @@ class YamlGenerator implements JsonGenerator {
 
         switch (value.getValueType()) {
         case NULL:
-            emitScalar(null);
+            emitScalar((Object) null);
             break;
 
         case TRUE:
@@ -303,44 +299,44 @@ class YamlGenerator implements JsonGenerator {
     @Override
     public JsonGenerator write(BigDecimal value) {
         Objects.requireNonNull(value, VALUE);
-        emitScalar(value, true);
+        emitScalar(value);
         return this;
     }
 
     @Override
     public JsonGenerator write(BigInteger value) {
         Objects.requireNonNull(value, VALUE);
-        emitScalar(value, true);
+        emitScalar(value);
         return this;
     }
 
     @Override
     public JsonGenerator write(int value) {
-        emitScalar(value, true);
+        emitScalar(value);
         return this;
     }
 
     @Override
     public JsonGenerator write(long value) {
-        emitScalar(value, true);
+        emitScalar(value);
         return this;
     }
 
     @Override
     public JsonGenerator write(double value) {
-        emitScalar(value, true);
+        emitScalar(value);
         return this;
     }
 
     @Override
     public JsonGenerator write(boolean value) {
-        emitScalar(value, true);
+        emitScalar(value);
         return this;
     }
 
     @Override
     public JsonGenerator writeNull() {
-        emitScalar(null, true);
+        emitScalar((Object) null);
         return this;
     }
 
