@@ -49,9 +49,11 @@ class YamlGenerator implements JsonGenerator {
     static final Event STREAM_START = new StreamStartEvent();
     static final Event STREAM_END = new StreamEndEvent();
 
-    // TODO Configurable explicit document start and end
-    static final Event DOCUMENT_START = new DocumentStartEvent(false, Optional.empty(), Collections.emptyMap());
-    static final Event DOCUMENT_END = new DocumentEndEvent(false);
+    static final Event DOCUMENT_START_DEFAULT = new DocumentStartEvent(false, Optional.empty(), Collections.emptyMap());
+    static final Event DOCUMENT_START_EXPLICIT = new DocumentStartEvent(true, Optional.empty(), Collections.emptyMap());
+
+    static final Event DOCUMENT_END_DEFAULT = new DocumentEndEvent(false);
+    static final Event DOCUMENT_END_EXPLICIT = new DocumentEndEvent(true);
 
     static final Event MAPPING_START = new MappingStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO);
     static final Event MAPPING_END = new MappingEndEvent();
@@ -63,19 +65,21 @@ class YamlGenerator implements JsonGenerator {
 
     final Closeable writer;
     final StreamDataWriter yamlWriter;
+    final DumpSettings settings;
     final Emitter emitter;
     final Deque<ContextType> context = new ArrayDeque<>();
 
     YamlGenerator(DumpSettings settings, Writer writer) {
         this.writer = writer;
         this.yamlWriter = new YamlWriterStream(writer);
+        this.settings = settings;
         this.emitter = new Emitter(settings, yamlWriter);
     }
 
     void ensureDocumentStarted() {
         if (context.isEmpty()) {
             emitter.emit(STREAM_START);
-            emitter.emit(DOCUMENT_START);
+            emitter.emit(settings.isExplicitStart() ? DOCUMENT_START_EXPLICIT : DOCUMENT_START_DEFAULT);
         }
     }
 
@@ -98,7 +102,6 @@ class YamlGenerator implements JsonGenerator {
         final ScalarStyle style;
 
         if (forcePlain) {
-            // TODO Allow configuration of null output - null/Null/NULL/~
             scalarValue = String.valueOf(value);
             style = ScalarStyle.PLAIN;
         } else {
@@ -237,7 +240,7 @@ class YamlGenerator implements JsonGenerator {
         }
 
         if (this.context.isEmpty()) {
-            emitter.emit(DOCUMENT_END);
+            emitter.emit(settings.isExplicitEnd() ? DOCUMENT_END_EXPLICIT : DOCUMENT_END_DEFAULT);
             emitter.emit(STREAM_END);
         }
 

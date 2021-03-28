@@ -13,6 +13,19 @@ interface SettingsBuilder {
         DumpSettingsBuilder settings = DumpSettings.builder();
 
         properties.entrySet().forEach(property -> {
+            final String name = property.getKey();
+            final Object value = property.getValue();
+
+            switch (name) {
+            case Yaml.Settings.DUMP_EXPLICIT_START:
+                settings.setExplicitStart(Boolean.valueOf(String.valueOf(value)));
+                break;
+            case Yaml.Settings.DUMP_EXPLICIT_END:
+                settings.setExplicitEnd(Boolean.valueOf(String.valueOf(value)));
+                break;
+            default:
+                break;
+            }
             /* TODO Map to snakeyaml settings */
         });
 

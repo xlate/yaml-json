@@ -67,6 +67,14 @@ import jakarta.json.stream.JsonParserFactory;
  */
 public final class Yaml {
 
+    public static final class Settings {
+        private Settings() {
+        }
+
+        public static final String DUMP_EXPLICIT_START = "DUMP_EXPLICIT_START";
+        public static final String DUMP_EXPLICIT_END = "DUMP_EXPLICIT_END";
+    }
+
     private static final JsonProvider PROVIDER = new YamlProvider();
 
     private Yaml() {

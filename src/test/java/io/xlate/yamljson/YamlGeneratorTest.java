@@ -6,10 +6,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
 import jakarta.json.stream.JsonGenerator;
+import jakarta.json.stream.JsonGeneratorFactory;
 
 class YamlGeneratorTest {
 
@@ -111,4 +113,37 @@ class YamlGeneratorTest {
                 + "  blank: ' '\n",
                 new String(stream.toByteArray()));
     }
+
+    @Test
+    void testExplicitDocumentStart() {
+        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_START, "true"));
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = factory.createGenerator(writer)) {
+            generator.writeStartObject()
+                .write("testKey", "testValue")
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals("---\ntestKey: testValue\n", writer.toString());
+    }
+
+    @Test
+    void testExplicitDocumentEnd() {
+        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_END, "true"));
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = factory.createGenerator(writer)) {
+            generator.writeStartObject()
+                .write("testKey", "testValue")
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals("testKey: testValue\n...\n", writer.toString());
+    }
+
 }
