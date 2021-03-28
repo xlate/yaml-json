@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -41,8 +42,7 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
     @Override
     public JsonParser createParser(InputStream in) {
-        Objects.requireNonNull(in, "in");
-        return createYamlParser(new InputStreamReader(in));
+        return createParser(in, StandardCharsets.UTF_8);
     }
 
     @Override

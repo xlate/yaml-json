@@ -2,6 +2,7 @@ package io.xlate.yamljson;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,8 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
-import jakarta.json.JsonValue;
 import jakarta.json.JsonWriter;
 
 class YamlWriterTest {
@@ -30,8 +32,9 @@ class YamlWriterTest {
                  JsonReader reader = Yaml.createReader(source);
                  JsonWriter writer = Yaml.createWriter(sink)) {
 
-                JsonValue value = reader.readValue();
-                writer.write(value);
+                JsonObject value = reader.readObject();
+                writer.writeObject(value);
+                assertThrows(IllegalStateException.class, () -> writer.write(value));
             }
 
             System.out.print(sink.toString());
@@ -43,8 +46,9 @@ class YamlWriterTest {
         StringWriter sink = new StringWriter();
 
         try (JsonWriter writer = Yaml.createWriter(sink)) {
-            JsonValue value = Json.createArrayBuilder().add("#http://example.com").build();
-            writer.write(value);
+            JsonArray value = Json.createArrayBuilder().add("#http://example.com").build();
+            writer.writeArray(value);
+            assertThrows(IllegalStateException.class, () -> writer.write(value));
         }
 
         assertEquals("- '#http://example.com'\n", sink.toString());

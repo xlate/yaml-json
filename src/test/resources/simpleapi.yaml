@@ -40,6 +40,7 @@ paths:
             type: integer
             format: int32
             minimum: 0
+            description: ~
         - in: query
           name: limit
           description: maximum number of records to return
