@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.xlate</groupId>
   <artifactId>yaml-json</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
+  <version>0.0.3</version>
 
   <name>yaml-json : JSON API for YAML</name>
   <description>Read and write YAML in Java using the Jakarta JSON API</description>
@@ -18,7 +17,7 @@
     <url>https://github.com/xlate/yaml-json</url>
     <connection>scm:git:https://github.com/xlate/yaml-json.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/xlate/yaml-json.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.0.3</tag>
   </scm>
 
   <licenses>
