@@ -27,19 +27,17 @@ class StringQuotingChecker {
     }
 
     /**
-     * See if given String value is one of:
+     * See if given String value is one of
      * <ul>
-     * <li>YAML 1.1 keyword representing
-     * <a href="https://yaml.org/type/bool.html">boolean</a></li>
-     * <li>YAML 1.1 keyword representing
-     * <a href="https://yaml.org/type/null.html">null</a> value</li>
+     * <li>YAML 1.2 keyword representing boolean</li>
+     * <li>YAML 1.2 keyword representing null value</li>
      * <li>empty String (length 0)</li></li> and returns {@code true} if so.
      *
      * @param value
      *            String to check
      *
      * @return {@code true} if given value is a Boolean or Null representation
-     *         (as per YAML 1.1 specification) or empty String
+     *         (as per YAML 1.2 specification) or empty String
      */
     boolean isReservedKeyword(String value) {
         if (value.length() == 0) {
@@ -53,6 +51,7 @@ class StringQuotingChecker {
             return YamlParser.VALUES_FALSE.contains(value);
         case 'n': // null
         case 'N': // Null
+        case '~':
             return YamlParser.VALUES_NULL.contains(value);
         case 't': // true
         case 'T': // True
@@ -79,13 +78,11 @@ class StringQuotingChecker {
             case ',':
                 return true;
             case '#':
-                // [dataformats-text#201]: limit quoting with MINIMIZE_QUOTES
                 if (precededByBlank(inputStr, i)) {
                     return true;
                 }
                 break;
             case ':':
-                // [dataformats-text#201]: limit quoting with MINIMIZE_QUOTES
                 if (followedByBlank(inputStr, i)) {
                     return true;
                 }
@@ -99,14 +96,14 @@ class StringQuotingChecker {
 
     boolean precededByBlank(String inputStr, int offset) {
         if (offset == 0) {
-            return false;
+            return true;
         }
         return isBlank(inputStr.charAt(offset - 1));
     }
 
     boolean followedByBlank(String inputStr, int offset) {
         if (offset == inputStr.length() - 1) {
-            return false;
+            return true;
         }
         return isBlank(inputStr.charAt(offset + 1));
     }

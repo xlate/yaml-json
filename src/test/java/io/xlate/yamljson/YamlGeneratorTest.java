@@ -1,6 +1,7 @@
 package io.xlate.yamljson;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import jakarta.json.stream.JsonGenerationException;
 import jakarta.json.stream.JsonGenerator;
 import jakarta.json.stream.JsonGeneratorFactory;
 
@@ -28,6 +30,27 @@ class YamlGeneratorTest {
         }
 
         assertEquals("testKey: testValue\n", writer.toString());
+    }
+
+    @Test
+    void testWriteKeyAtRootThrowsException() {
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+            assertThrows(JsonGenerationException.class, () -> generator.writeKey("key"));
+        }
+    }
+
+    @Test
+    void testWriteKeyInArrayThrowsException() {
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+            generator.writeStartArray();
+            assertThrows(JsonGenerationException.class, () -> generator.writeKey("key"));
+        } catch (JsonGenerationException jge) {
+            // Ignore the exception thrown by implicit call to close()
+        }
     }
 
     @Test
@@ -152,4 +175,28 @@ class YamlGeneratorTest {
         assertEquals("testKey: testValue\n...\n", writer.toString());
     }
 
+    @Test
+    void testSpecialStringsQuoted() {
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+            generator.writeStartObject()
+                .write("#keywithhash", "value with: colon")
+                .write("#anotherwithhash", "value with:colon but the :is not followed by a space")
+                .write("key with spaces", "ends with colon:")
+                .write("key\twith\ttabs", "ends with hash #")
+                .write("hash# in the middle", "#hash at the start of the value")
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals(""
+                + "'#keywithhash': 'value with: colon'\n"
+                + "'#anotherwithhash': value with:colon but the :is not followed by a space\n"
+                + "key with spaces: 'ends with colon:'\n"
+                + "\"key\\twith\\ttabs\": 'ends with hash #'\n"
+                + "hash# in the middle: '#hash at the start of the value'\n",
+                writer.toString());
+    }
 }
