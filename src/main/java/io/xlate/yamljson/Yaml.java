@@ -23,6 +23,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Map;
 
+import org.snakeyaml.engine.v2.api.DumpSettingsBuilder;
+
 import jakarta.json.JsonArray;
 import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
@@ -50,7 +52,8 @@ import jakarta.json.stream.JsonParserFactory;
  * create JSON processing objects.
  *
  * <p>
- * The following example shows how to create a parser to parse an empty array:
+ * The following example shows how to create a parser to parse simple key/value
+ * pair:
  *
  * <pre>
  * <code>
@@ -67,11 +70,21 @@ import jakarta.json.stream.JsonParserFactory;
  */
 public final class Yaml {
 
+    /**
+     * Constants of supported property keys.
+     */
     public static final class Settings {
         private Settings() {
         }
 
+        /**
+         * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitStart(boolean)
+         */
         public static final String DUMP_EXPLICIT_START = "DUMP_EXPLICIT_START";
+
+        /**
+         * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitEnd(boolean)
+         */
         public static final String DUMP_EXPLICIT_END = "DUMP_EXPLICIT_END";
     }
 

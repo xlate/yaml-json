@@ -105,6 +105,7 @@
             <links>
               <link>https://docs.oracle.com/en/java/javase/11/docs/api</link>
               <link>https://jakarta.ee/specifications/platform/8/apidocs</link>
+              <link>https://javadoc.io/doc/org.snakeyaml/snakeyaml-engine/${version.snakeyaml-engine}/</link>
             </links>
           </configuration>
         </plugin>
