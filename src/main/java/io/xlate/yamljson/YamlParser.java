@@ -357,36 +357,6 @@ final class YamlParser implements JsonParser, JsonLocation {
         }
     }
 
-    @Override
-    public boolean hasNext() {
-        if (jsonEventQueue.isEmpty()) {
-            fillQueues();
-        }
-
-        return !jsonEventQueue.isEmpty();
-    }
-
-    @Override
-    public Event next() {
-        fillQueues();
-        advanceEvent();
-        return currentEvent;
-    }
-
-    @Override
-    public JsonLocation getLocation() {
-        return this;
-    }
-
-    @Override
-    public void close() {
-        try {
-            yamlSource.close();
-        } catch (IOException e) {
-            throw new JsonException("Exception closing YAML source", e);
-        }
-    }
-
     void assertEventValueNumber() {
         final Event current = this.currentEvent;
 
@@ -420,6 +390,38 @@ final class YamlParser implements JsonParser, JsonLocation {
             break;
         default:
             throw new IllegalStateException("Current event is not a value [" + current + ']');
+        }
+    }
+
+    // JsonParser
+
+    @Override
+    public boolean hasNext() {
+        if (jsonEventQueue.isEmpty()) {
+            fillQueues();
+        }
+
+        return !jsonEventQueue.isEmpty();
+    }
+
+    @Override
+    public Event next() {
+        fillQueues();
+        advanceEvent();
+        return currentEvent;
+    }
+
+    @Override
+    public JsonLocation getLocation() {
+        return this;
+    }
+
+    @Override
+    public void close() {
+        try {
+            yamlSource.close();
+        } catch (IOException e) {
+            throw new JsonException("Exception closing YAML source", e);
         }
     }
 
