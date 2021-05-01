@@ -23,8 +23,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.Map;
 
-import org.snakeyaml.engine.v2.api.DumpSettingsBuilder;
-
 import jakarta.json.JsonArray;
 import jakarta.json.JsonException;
 import jakarta.json.JsonObject;

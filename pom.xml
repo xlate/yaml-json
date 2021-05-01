@@ -55,7 +55,7 @@
     <sonar.organization>xlate</sonar.organization>
 
     <version.jakarta.json-api>2.0.0</version.jakarta.json-api>
-    <version.snakeyaml-engine>2.2.1</version.snakeyaml-engine>
+    <version.snakeyaml-engine>2.3</version.snakeyaml-engine>
 
     <version.junit-jupiter>5.7.0</version.junit-jupiter>
   </properties>
