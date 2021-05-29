@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -30,6 +31,12 @@ import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParserFactory;
 
 class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
+
+    private static final String MOD_SNAKEYAML = "org.yaml.snakeyaml";
+    private static final String MOD_SNAKEYAML_ENGINE = "org.snakeyaml.engine";
+    private static final String MISSING_MODULE_MESSAGE = "Required module not found: %s. "
+            + "Ensure module is present on module path. Add to application module-info or "
+            + "include with --add-modules command line option.";
 
     private final Map<String, ?> properties;
     private final boolean useSnakeYamlEngine;
@@ -43,20 +50,33 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
         this.properties = properties;
 
         Object version = properties.get(Yaml.Settings.YAML_VERSION);
-        this.useSnakeYamlEngine = Yaml.Settings.YAML_VERSION_1_2.equals(version);
+        useSnakeYamlEngine = Yaml.Settings.YAML_VERSION_1_2.equals(version);
 
         if (useSnakeYamlEngine) {
-            this.snakeYamlProvider = new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(properties));
+            snakeYamlProvider = loadProvider(() -> new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(properties)),
+                                             MOD_SNAKEYAML_ENGINE);
         } else {
-            this.snakeYamlProvider = new org.yaml.snakeyaml.Yaml(buildLoaderOptions(properties));
+            snakeYamlProvider = loadProvider(() -> new org.yaml.snakeyaml.Yaml(buildLoaderOptions(properties)),
+                                             MOD_SNAKEYAML);
+        }
+    }
+
+    Object loadProvider(Supplier<Object> providerSupplier, String providerModule) {
+        try {
+            return providerSupplier.get();
+        } catch (Exception | NoClassDefFoundError e) {
+            throw new IllegalStateException(String.format(MISSING_MODULE_MESSAGE, providerModule), e);
         }
     }
 
     YamlParserCommon createYamlParser(Reader reader) {
         if (useSnakeYamlEngine) {
-            return new YamlParser(((org.snakeyaml.engine.v2.api.lowlevel.Parse)snakeYamlProvider).parseReader(reader).iterator(), reader);
+            var provider = (org.snakeyaml.engine.v2.api.lowlevel.Parse) snakeYamlProvider;
+            return new YamlParser(provider.parseReader(reader).iterator(), reader);
         }
-        return new YamlParser1_1(((org.yaml.snakeyaml.Yaml)snakeYamlProvider).parse(reader).iterator(), reader);
+
+        var provider = (org.yaml.snakeyaml.Yaml) snakeYamlProvider;
+        return new YamlParser1_1(provider.parse(reader).iterator(), reader);
     }
 
     @Override
