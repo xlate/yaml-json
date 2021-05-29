@@ -56,6 +56,7 @@
     <sonar.organization>xlate</sonar.organization>
 
     <version.jakarta.json-api>2.0.0</version.jakarta.json-api>
+    <version.snakeyaml>1.28</version.snakeyaml>
     <version.snakeyaml-engine>2.3</version.snakeyaml-engine>
 
     <version.junit-jupiter>5.7.0</version.junit-jupiter>
@@ -83,7 +84,7 @@
               <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
             </systemPropertyVariables>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED ${argLine}</argLine>
+            <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED --add-modules=org.snakeyaml.engine.v2,org.yaml.snakeyaml ${argLine}</argLine>
           </configuration>
         </plugin>
         <plugin>
@@ -182,7 +183,7 @@
       <dependency>
         <groupId>org.yaml</groupId>
         <artifactId>snakeyaml</artifactId>
-        <version>1.28</version>
+        <version>${version.snakeyaml}</version>
       </dependency>
 
       <!-- Testing -->
@@ -214,10 +215,12 @@
     <dependency>
       <groupId>org.snakeyaml</groupId>
       <artifactId>snakeyaml-engine</artifactId>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.yaml</groupId>
       <artifactId>snakeyaml</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <!-- Testing -->

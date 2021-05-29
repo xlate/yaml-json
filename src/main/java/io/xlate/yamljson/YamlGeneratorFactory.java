@@ -31,8 +31,7 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
 
     private final Map<String, ?> properties;
     private final boolean useSnakeYamlEngine;
-    private final org.yaml.snakeyaml.DumperOptions snakeYamlOptions;
-    private final org.snakeyaml.engine.v2.api.DumpSettings snakeYamlSettings;
+    private final Object snakeYamlSettings;
 
     YamlGeneratorFactory() {
         this(Collections.emptyMap());
@@ -44,11 +43,9 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
         this.useSnakeYamlEngine = Yaml.Settings.YAML_VERSION_1_2.equals(version);
 
         if (useSnakeYamlEngine) {
-            this.snakeYamlOptions = null;
             this.snakeYamlSettings = buildDumpSettings(properties);
         } else {
-            this.snakeYamlOptions = buildDumperOptions(properties);
-            this.snakeYamlSettings = null;
+            this.snakeYamlSettings = buildDumperOptions(properties);
         }
     }
 
@@ -56,9 +53,9 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
     public JsonGenerator createGenerator(Writer writer) {
         Objects.requireNonNull(writer, "writer");
         if (useSnakeYamlEngine) {
-            return new YamlGenerator(this.snakeYamlSettings, writer);
+            return new YamlGenerator((org.snakeyaml.engine.v2.api.DumpSettings) this.snakeYamlSettings, writer);
         }
-        return new YamlGenerator1_1(this.snakeYamlOptions, writer);
+        return new YamlGenerator1_1((org.yaml.snakeyaml.DumperOptions) this.snakeYamlSettings, writer);
     }
 
     @Override

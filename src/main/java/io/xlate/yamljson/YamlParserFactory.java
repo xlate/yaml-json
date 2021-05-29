@@ -33,8 +33,7 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
     private final Map<String, ?> properties;
     private final boolean useSnakeYamlEngine;
-    private final org.yaml.snakeyaml.Yaml snakeYaml;
-    private final org.snakeyaml.engine.v2.api.lowlevel.Parse snakeYamlEngineParse;
+    private final Object snakeYamlProvider;
 
     YamlParserFactory() {
         this(Collections.emptyMap());
@@ -47,19 +46,17 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
         this.useSnakeYamlEngine = Yaml.Settings.YAML_VERSION_1_2.equals(version);
 
         if (useSnakeYamlEngine) {
-            this.snakeYaml = null;
-            this.snakeYamlEngineParse = new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(properties));
+            this.snakeYamlProvider = new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(properties));
         } else {
-            this.snakeYaml = new org.yaml.snakeyaml.Yaml(buildLoaderOptions(properties));
-            this.snakeYamlEngineParse = null;
+            this.snakeYamlProvider = new org.yaml.snakeyaml.Yaml(buildLoaderOptions(properties));
         }
     }
 
     YamlParserCommon createYamlParser(Reader reader) {
         if (useSnakeYamlEngine) {
-            return new YamlParser(snakeYamlEngineParse.parseReader(reader).iterator(), reader);
+            return new YamlParser(((org.snakeyaml.engine.v2.api.lowlevel.Parse)snakeYamlProvider).parseReader(reader).iterator(), reader);
         }
-        return new YamlParser1_1(snakeYaml.parse(reader).iterator(), reader);
+        return new YamlParser1_1(((org.yaml.snakeyaml.Yaml)snakeYamlProvider).parse(reader).iterator(), reader);
     }
 
     @Override
