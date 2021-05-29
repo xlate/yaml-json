@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.xlate.yamljson;
 
 import java.io.OutputStream;
@@ -9,15 +24,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
-import org.snakeyaml.engine.v2.api.DumpSettings;
-
 import jakarta.json.JsonWriter;
 import jakarta.json.JsonWriterFactory;
 
 class YamlWriterFactory implements JsonWriterFactory, SettingsBuilder {
 
     private final Map<String, ?> properties;
-    private final DumpSettings settings;
+    private final YamlGeneratorFactory generatorFactory;
 
     YamlWriterFactory() {
         this(Collections.emptyMap());
@@ -25,13 +38,13 @@ class YamlWriterFactory implements JsonWriterFactory, SettingsBuilder {
 
     YamlWriterFactory(Map<String, ?> properties) {
         this.properties = properties;
-        this.settings = buildDumpSettings(properties);
+        this.generatorFactory = new YamlGeneratorFactory(properties);
     }
 
     @Override
     public JsonWriter createWriter(Writer writer) {
         Objects.requireNonNull(writer, "writer");
-        return new YamlWriter(this.settings, writer);
+        return new YamlWriter(generatorFactory.createGenerator(writer));
     }
 
     @Override
@@ -43,7 +56,7 @@ class YamlWriterFactory implements JsonWriterFactory, SettingsBuilder {
     public JsonWriter createWriter(OutputStream out, Charset charset) {
         Objects.requireNonNull(out, "out");
         Objects.requireNonNull(charset, "charset");
-        return new YamlWriter(this.settings, new OutputStreamWriter(out, charset));
+        return createWriter(new OutputStreamWriter(out, charset));
     }
 
     @Override

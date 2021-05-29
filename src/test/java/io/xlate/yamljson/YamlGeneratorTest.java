@@ -1,15 +1,35 @@
+/*
+ * Copyright 2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.xlate.yamljson;
 
+import static io.xlate.yamljson.YamlTestHelper.VERSIONS_SOURCE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import jakarta.json.stream.JsonGenerationException;
 import jakarta.json.stream.JsonGenerator;
@@ -17,11 +37,20 @@ import jakarta.json.stream.JsonGeneratorFactory;
 
 class YamlGeneratorTest {
 
-    @Test
-    void testSimple() {
+    JsonGenerator createGenerator(String version, Writer writer) {
+        return Yaml.createGeneratorFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createGenerator(writer);
+    }
+
+    JsonGenerator createGenerator(String version, OutputStream stream) {
+        return createGenerator(version, new OutputStreamWriter(stream));
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSimple(String version) {
         StringWriter writer = new StringWriter();
 
-        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+        try (JsonGenerator generator = createGenerator(version, writer)) {
             generator.writeStartObject()
                 .write("testKey", "testValue")
                 .writeEnd();
@@ -32,20 +61,22 @@ class YamlGeneratorTest {
         assertEquals("testKey: testValue\n", writer.toString());
     }
 
-    @Test
-    void testWriteKeyAtRootThrowsException() {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testWriteKeyAtRootThrowsException(String version) {
         StringWriter writer = new StringWriter();
 
-        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+        try (JsonGenerator generator = createGenerator(version, writer)) {
             assertThrows(JsonGenerationException.class, () -> generator.writeKey("key"));
         }
     }
 
-    @Test
-    void testWriteKeyInArrayThrowsException() {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testWriteKeyInArrayThrowsException(String version) {
         StringWriter writer = new StringWriter();
 
-        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+        try (JsonGenerator generator = createGenerator(version, writer)) {
             generator.writeStartArray();
             assertThrows(JsonGenerationException.class, () -> generator.writeKey("key"));
         } catch (JsonGenerationException jge) {
@@ -53,11 +84,12 @@ class YamlGeneratorTest {
         }
     }
 
-    @Test
-    void testSequenceOfValues() {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSequenceOfValues(String version) {
         StringWriter writer = new StringWriter();
 
-        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+        try (JsonGenerator generator = createGenerator(version, writer)) {
             generator.writeStartObject()
                 .writeStartArray("values")
                     .write(new BigDecimal("3.14"))
@@ -92,11 +124,12 @@ class YamlGeneratorTest {
                 writer.toString());
     }
 
-    @Test
-    void testMappingOfValues() {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testMappingOfValues(String version) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
-        try (JsonGenerator generator = Yaml.createGenerator(stream)) {
+        try (JsonGenerator generator = createGenerator(version, stream)) {
             generator.writeStartObject()
                 .writeStartObject("values")
                     .write("BigDecimal", new BigDecimal("3.14"))
@@ -143,9 +176,11 @@ class YamlGeneratorTest {
                 new String(stream.toByteArray()));
     }
 
-    @Test
-    void testExplicitDocumentStart() {
-        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_START, "true"));
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testExplicitDocumentStart(String version) {
+        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_START, "true",
+                                                                          Yaml.Settings.YAML_VERSION, version));
         StringWriter writer = new StringWriter();
 
         try (JsonGenerator generator = factory.createGenerator(writer)) {
@@ -159,9 +194,11 @@ class YamlGeneratorTest {
         assertEquals("---\ntestKey: testValue\n", writer.toString());
     }
 
-    @Test
-    void testExplicitDocumentEnd() {
-        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_END, "true"));
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testExplicitDocumentEnd(String version) {
+        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_END, "true",
+                                                                          Yaml.Settings.YAML_VERSION, version));
         StringWriter writer = new StringWriter();
 
         try (JsonGenerator generator = factory.createGenerator(writer)) {
@@ -175,11 +212,12 @@ class YamlGeneratorTest {
         assertEquals("testKey: testValue\n...\n", writer.toString());
     }
 
-    @Test
-    void testSpecialStringsQuoted() {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSpecialStringsQuoted(String version) {
         StringWriter writer = new StringWriter();
 
-        try (JsonGenerator generator = Yaml.createGenerator(writer)) {
+        try (JsonGenerator generator = createGenerator(version, writer)) {
             generator.writeStartObject()
                 .write("#keywithhash", "value with: colon")
                 .write("#anotherwithhash", "value with:colon but the :is not followed by a space")

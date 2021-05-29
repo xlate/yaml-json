@@ -1,11 +1,24 @@
+/*
+ * Copyright 2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.xlate.yamljson;
 
 import java.io.Reader;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedList;
-
-import org.snakeyaml.engine.v2.api.lowlevel.Parse;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -22,11 +35,11 @@ import jakarta.json.stream.JsonParser.Event;
 class YamlReader implements JsonReader {
 
     final JsonProvider jsonProvider = JsonProvider.provider();
-    final YamlParser parser;
+    final YamlParserCommon parser;
     boolean readable = true;
 
-    YamlReader(Parse yamlParser, Reader yamlReader) {
-        this.parser = new YamlParser(yamlParser, yamlReader);
+    YamlReader(YamlParserCommon parser, Reader yamlReader) {
+        this.parser = parser;
     }
 
     @Override

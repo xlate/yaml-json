@@ -1,5 +1,22 @@
+/*
+ * Copyright 2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.xlate.yamljson;
 
+import static io.xlate.yamljson.YamlTestHelper.VERSIONS_SOURCE;
+import static io.xlate.yamljson.YamlTestHelper.testEachVersion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -9,13 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
+import java.util.Map;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import jakarta.json.JsonException;
@@ -25,6 +44,14 @@ import jakarta.json.stream.JsonParser.Event;
 import jakarta.json.stream.JsonParsingException;
 
 class YamlParserTest {
+
+    JsonParser createParser(String version, Reader reader) {
+        return Yaml.createParserFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createParser(reader);
+    }
+
+    JsonParser createParser(String version, InputStream stream) {
+        return createParser(version, new InputStreamReader(stream));
+    }
 
     Event seekEvent(JsonParser parser, int nextCalls) {
         Event event = null;
@@ -53,23 +80,25 @@ class YamlParserTest {
         "Test (e)xp float  , ---%nkey: -1e-5%n, 3, false, -0.00001",
     })
     void testFiniteNumbers(String label, String yaml, int nextCalls, boolean integral, BigDecimal expected) {
-        try (JsonParser parser = Yaml.createParser(new StringReader(String.format(yaml)))) {
-            Event event = seekEvent(parser, nextCalls);
-            assertEquals(Event.VALUE_NUMBER, event);
+        testEachVersion(version -> {
+            try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
+                Event event = seekEvent(parser, nextCalls);
+                assertEquals(Event.VALUE_NUMBER, event);
 
-            // It's a number
-            assertFalse(((YamlParser) parser).isNaN());
-            // It's not infinite
-            assertFalse(((YamlParser) parser).isInfinite());
+                // It's a number
+                assertFalse(((YamlParserCommon) parser).isNaN());
+                // It's not infinite
+                assertFalse(((YamlParserCommon) parser).isInfinite());
 
-            assertEquals(integral, parser.isIntegralNumber());
+                assertEquals(integral, parser.isIntegralNumber());
 
-            BigDecimal actual = parser.getBigDecimal();
+                BigDecimal actual = parser.getBigDecimal();
 
-            assertEquals(expected, actual);
-            assertEquals(expected.longValue(), parser.getLong());
-            assertEquals(expected.intValue(), parser.getInt());
-        }
+                assertEquals(expected, actual);
+                assertEquals(expected.longValue(), parser.getLong());
+                assertEquals(expected.intValue(), parser.getInt());
+            }
+        });
     }
 
     @ParameterizedTest
@@ -79,13 +108,15 @@ class YamlParserTest {
         "Test infinity (-), ---%nkey: -.INF%n, 3, -.INF",
     })
     void testInfiniteValues(String label, String yaml, int nextCalls, String expected) {
-        try (JsonParser parser = Yaml.createParser(new StringReader(String.format(yaml)))) {
-            Event event = seekEvent(parser, nextCalls);
-            assertEquals(Event.VALUE_STRING, event);
-            assertTrue(((YamlParser) parser).isInfinite());
-            String actual = parser.getString();
-            assertEquals(expected, actual);
-        }
+        testEachVersion(version -> {
+            try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
+                Event event = seekEvent(parser, nextCalls);
+                assertEquals(Event.VALUE_STRING, event);
+                assertTrue(((YamlParserCommon) parser).isInfinite());
+                String actual = parser.getString();
+                assertEquals(expected, actual);
+            }
+        });
     }
 
     @ParameterizedTest
@@ -93,14 +124,16 @@ class YamlParserTest {
         "Test NaN, ---%nkey: .NaN%n, 3, .NaN"
     })
     void testNaNValues(String label, String yaml, int nextCalls, String expected) {
-        try (JsonParser parser = Yaml.createParser(new StringReader(String.format(yaml)))) {
-            Event event = seekEvent(parser, nextCalls);
-            assertEquals(Event.VALUE_STRING, event);
-            assertFalse(((YamlParser) parser).isInfinite());
-            assertTrue(((YamlParser) parser).isNaN());
-            String actual = parser.getString();
-            assertEquals(expected, actual);
-        }
+        testEachVersion(version -> {
+            try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
+                Event event = seekEvent(parser, nextCalls);
+                assertEquals(Event.VALUE_STRING, event);
+                assertFalse(((YamlParserCommon) parser).isInfinite());
+                assertTrue(((YamlParserCommon) parser).isNaN());
+                String actual = parser.getString();
+                assertEquals(expected, actual);
+            }
+        });
     }
 
     @ParameterizedTest
@@ -111,11 +144,13 @@ class YamlParserTest {
         "Test Null when empty, ---%nkey: %n , 3, VALUE_NULL"
     })
     void testEventConstantValues(String label, String yaml, int nextCalls, Event expected) {
-        try (JsonParser parser = Yaml.createParser(new StringReader(String.format(yaml)))) {
-            Event event = seekEvent(parser, nextCalls);
-            assertEquals(expected, event);
-            assertThrows(IllegalStateException.class, () -> parser.getString());
-        }
+        testEachVersion(version -> {
+            try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
+                Event event = seekEvent(parser, nextCalls);
+                assertEquals(expected, event);
+                assertThrows(IllegalStateException.class, () -> parser.getString());
+            }
+        });
     }
 
     @ParameterizedTest
@@ -138,12 +173,14 @@ class YamlParserTest {
         "Test multi-line string         , ---%nkey: >-%n  Value%n  without%n  newlines%n, 3, Value without newlines",
     })
     void testStringValues(String label, String yaml, int nextCalls, String expected) {
-        try (JsonParser parser = Yaml.createParser(new StringReader(String.format(yaml)))) {
-            Event event = seekEvent(parser, nextCalls);
-            assertEquals(Event.VALUE_STRING, event);
-            assertEquals(expected, parser.getString());
-            assertThrows(IllegalStateException.class, () -> parser.getBigDecimal());
-        }
+        testEachVersion(version -> {
+            try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
+                Event event = seekEvent(parser, nextCalls);
+                assertEquals(Event.VALUE_STRING, event);
+                assertEquals(expected, parser.getString());
+                assertThrows(IllegalStateException.class, () -> parser.getBigDecimal());
+            }
+        });
     }
 
     @ParameterizedTest
@@ -153,50 +190,55 @@ class YamlParserTest {
         "Test location before stream  , ---%nkey: value%n, 0, -1, -1, -1",
     })
     void testLocationValues(String label, String yaml, int nextCalls, long offset, long line, long column) {
-        InputStream source = new ByteArrayInputStream(String.format(yaml).getBytes());
+        testEachVersion(version -> {
+            InputStream source = new ByteArrayInputStream(String.format(yaml).getBytes());
 
-        try (JsonParser parser = Yaml.createParser(source)) {
-            for (int i = 0; i < nextCalls; i++) {
-                parser.next();
+            try (JsonParser parser = createParser(version, source)) {
+                for (int i = 0; i < nextCalls; i++) {
+                    parser.next();
+                }
+                JsonLocation location = parser.getLocation();
+                assertEquals(offset, location.getStreamOffset());
+                assertEquals(line, location.getLineNumber());
+                assertEquals(column, location.getColumnNumber());
             }
-            JsonLocation location = parser.getLocation();
-            assertEquals(offset, location.getStreamOffset());
-            assertEquals(line, location.getLineNumber());
-            assertEquals(column, location.getColumnNumber());
-        }
+        });
     }
 
-    @Test
-    void testInvalidInputThrowsJsonParsingException() {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testInvalidInputThrowsJsonParsingException(String version) {
         InputStream source = new ByteArrayInputStream(String.format("---%nkey\u0000%n").getBytes());
 
-        try (JsonParser parser = Yaml.createParser(source)) {
+        try (JsonParser parser = createParser(version, source)) {
             JsonParsingException thrown = assertThrows(JsonParsingException.class, () -> parser.next());
             Throwable cause = thrown.getCause();
             assertNotNull(cause);
         }
     }
 
-    @Test
-    void testInfinityCheckOnKeyThrowsException() {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testInfinityCheckOnKeyThrowsException(String version) {
         InputStream source = new ByteArrayInputStream(String.format("---%nkey: value%n").getBytes());
 
-        try (YamlParser parser = (YamlParser) Yaml.createParser(source)) {
+        try (YamlParserCommon parser = (YamlParserCommon) createParser(version, source)) {
             parser.next();
             parser.next();
             assertThrows(IllegalStateException.class, () -> parser.isInfinite());
         }
     }
 
-    @Test
-    void testIOExceptionThrowsJsonException() throws IOException {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testIOExceptionThrowsJsonException(String version) throws IOException {
         Reader proxy = Mockito.mock(Reader.class);
 
         Mockito.doThrow(IOException.class).when(proxy).read(Mockito.any(char[].class), Mockito.anyInt(), Mockito.anyInt());
         Mockito.doThrow(IOException.class).when(proxy).close();
         IOException closeException = null;
 
-        try (JsonParser parser = Yaml.createParser(proxy)) {
+        try (JsonParser parser = createParser(version, proxy)) {
             JsonException thrown = assertThrows(JsonException.class, () -> parser.next());
             Throwable cause = thrown.getCause();
             assertNotNull(cause);

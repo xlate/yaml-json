@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.xlate</groupId>
@@ -104,7 +105,7 @@
             <excludePackageNames>io.xlate.yamljson.internal.*</excludePackageNames>
             <links>
               <link>https://docs.oracle.com/en/java/javase/11/docs/api</link>
-              <link>https://jakarta.ee/specifications/platform/8/apidocs</link>
+              <link>https://jakarta.ee/specifications/platform/9/apidocs</link>
               <link>https://javadoc.io/doc/org.snakeyaml/snakeyaml-engine/${version.snakeyaml-engine}/</link>
             </links>
           </configuration>
@@ -178,6 +179,11 @@
         <artifactId>snakeyaml-engine</artifactId>
         <version>${version.snakeyaml-engine}</version>
       </dependency>
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>1.28</version>
+      </dependency>
 
       <!-- Testing -->
       <dependency>
@@ -208,6 +214,10 @@
     <dependency>
       <groupId>org.snakeyaml</groupId>
       <artifactId>snakeyaml-engine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
     </dependency>
 
     <!-- Testing -->

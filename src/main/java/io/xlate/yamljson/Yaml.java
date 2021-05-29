@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonException;
@@ -72,7 +73,15 @@ public final class Yaml {
      * Constants of supported property keys.
      */
     public static final class Settings {
+        public static final String YAML_VERSION = "io.xlate.yamljson.YAML_VERSION";
+        public static final String YAML_VERSION_1_1 = "v1.1";
+        public static final String YAML_VERSION_1_2 = "v1.2";
+
         private Settings() {
+        }
+
+        public static Set<String> supportedVersions() {
+            return Set.of(YAML_VERSION_1_1, YAML_VERSION_1_2);
         }
 
         /**

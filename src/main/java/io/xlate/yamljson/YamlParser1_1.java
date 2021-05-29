@@ -27,12 +27,12 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
-import org.snakeyaml.engine.v2.exceptions.Mark;
+import org.yaml.snakeyaml.error.Mark;
 
 import jakarta.json.JsonException;
 import jakarta.json.stream.JsonParsingException;
 
-final class YamlParser implements YamlParserCommon {
+final class YamlParser1_1 implements YamlParserCommon {
 
     enum NumberType {
         INTEGER,
@@ -57,7 +57,7 @@ final class YamlParser implements YamlParserCommon {
         }
     }
 
-    private static final Logger LOGGER = Logger.getLogger(YamlParser.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(YamlParser1_1.class.getName());
 
     static final String MSG_EXCEPTION = "Exception reading the YAML stream as JSON";
     static final String MSG_UNEXPECTED = "Unexpected event reached parsing YAML: ";
@@ -74,9 +74,9 @@ final class YamlParser implements YamlParserCommon {
     static final Set<String> VALUES_NAN = Set.of(YamlNumbers.CANONICAL_NAN, ".NaN", ".NAN");
 
     final Reader yamlSource;
-    final Iterator<org.snakeyaml.engine.v2.events.Event> yamlEvents;
+    final Iterator<org.yaml.snakeyaml.events.Event> yamlEvents;
 
-    final Queue<org.snakeyaml.engine.v2.events.Event> yamlEventQueue = new ArrayDeque<>();
+    final Queue<org.yaml.snakeyaml.events.Event> yamlEventQueue = new ArrayDeque<>();
     final Queue<Event> jsonEventQueue = new ArrayDeque<>();
     final Queue<NumberType> numberTypeQueue = new ArrayDeque<>();
     final Queue<String> valueQueue = new ArrayDeque<>();
@@ -84,7 +84,7 @@ final class YamlParser implements YamlParserCommon {
     final DecimalFormat decimalParser = new DecimalFormat();
     final ParsePosition decimalPosition = new ParsePosition(0);
 
-    org.snakeyaml.engine.v2.events.Event currentYamlEvent;
+    org.yaml.snakeyaml.events.Event currentYamlEvent;
     Event currentEvent;
     NumberType currentNumberType;
     String currentValue;
@@ -93,7 +93,7 @@ final class YamlParser implements YamlParserCommon {
     final Boolean[] valueIsKey = new Boolean[200];
     int depth = -1;
 
-    YamlParser(Iterator<org.snakeyaml.engine.v2.events.Event> yamlEvents, Reader yamlReader) {
+    YamlParser1_1(Iterator<org.yaml.snakeyaml.events.Event> yamlEvents, Reader yamlReader) {
         this.yamlEvents = yamlEvents;
         this.yamlSource = yamlReader;
     }
@@ -254,7 +254,7 @@ final class YamlParser implements YamlParserCommon {
         }
     }
 
-    void enqueueDataElement(org.snakeyaml.engine.v2.events.ScalarEvent yamlEvent, Boolean needKeyName) {
+    void enqueueDataElement(org.yaml.snakeyaml.events.ScalarEvent yamlEvent, Boolean needKeyName) {
         final String dataText = yamlEvent.getValue();
 
         if (Boolean.TRUE.equals(needKeyName)) {
@@ -283,7 +283,7 @@ final class YamlParser implements YamlParserCommon {
         this.valueIsKey[depth] = keyExpected;
     }
 
-    boolean enqueueEvent(org.snakeyaml.engine.v2.events.Event yamlEvent) {
+    boolean enqueueEvent(org.yaml.snakeyaml.events.Event yamlEvent) {
         LOGGER.finer(() -> "Enqueue YAML event: " + yamlEvent);
         currentYamlEvent = yamlEvent;
         currentNumber = null;
@@ -312,7 +312,7 @@ final class YamlParser implements YamlParserCommon {
             break;
         case Scalar:
             Boolean keyExpected = isKeyExpected();
-            enqueueDataElement((org.snakeyaml.engine.v2.events.ScalarEvent) yamlEvent, keyExpected);
+            enqueueDataElement((org.yaml.snakeyaml.events.ScalarEvent) yamlEvent, keyExpected);
             if (keyExpected != null) {
                 this.valueIsKey[depth] = Boolean.valueOf(!keyExpected);
             }
@@ -478,7 +478,8 @@ final class YamlParser implements YamlParserCommon {
 
     long currentEventPosition(Function<Mark, Integer> mapper) {
         if (currentYamlEvent != null) {
-            return currentYamlEvent.getStartMark().map(mapper).orElse(-1);
+            Mark startMark = currentYamlEvent.getStartMark();
+            return startMark != null ? mapper.apply(startMark) : -1;
         }
 
         return -1;

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2021 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.xlate.yamljson;
 
 import java.io.InputStream;
@@ -9,8 +24,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
-import org.snakeyaml.engine.v2.api.lowlevel.Parse;
-
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.stream.JsonParser;
@@ -19,7 +32,9 @@ import jakarta.json.stream.JsonParserFactory;
 class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
     private final Map<String, ?> properties;
-    private final Parse parse;
+    private final boolean useSnakeYamlEngine;
+    private final org.yaml.snakeyaml.Yaml snakeYaml;
+    private final org.snakeyaml.engine.v2.api.lowlevel.Parse snakeYamlEngineParse;
 
     YamlParserFactory() {
         this(Collections.emptyMap());
@@ -27,11 +42,24 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
     YamlParserFactory(Map<String, ?> properties) {
         this.properties = properties;
-        this.parse = new Parse(buildLoadSettings(properties));
+
+        Object version = properties.get(Yaml.Settings.YAML_VERSION);
+        this.useSnakeYamlEngine = Yaml.Settings.YAML_VERSION_1_2.equals(version);
+
+        if (useSnakeYamlEngine) {
+            this.snakeYaml = null;
+            this.snakeYamlEngineParse = new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(properties));
+        } else {
+            this.snakeYaml = new org.yaml.snakeyaml.Yaml(buildLoaderOptions(properties));
+            this.snakeYamlEngineParse = null;
+        }
     }
 
-    private YamlParser createYamlParser(Reader reader) {
-        return new YamlParser(parse, reader);
+    YamlParserCommon createYamlParser(Reader reader) {
+        if (useSnakeYamlEngine) {
+            return new YamlParser(snakeYamlEngineParse.parseReader(reader).iterator(), reader);
+        }
+        return new YamlParser1_1(snakeYaml.parse(reader).iterator(), reader);
     }
 
     @Override

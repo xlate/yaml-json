@@ -15,9 +15,7 @@
  */
 package io.xlate.yamljson;
 
-import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -26,25 +24,23 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Predicate;
 
-import org.snakeyaml.engine.v2.api.DumpSettings;
-import org.snakeyaml.engine.v2.api.StreamDataWriter;
-import org.snakeyaml.engine.v2.common.FlowStyle;
-import org.snakeyaml.engine.v2.common.ScalarStyle;
-import org.snakeyaml.engine.v2.emitter.Emitter;
-import org.snakeyaml.engine.v2.events.DocumentEndEvent;
-import org.snakeyaml.engine.v2.events.DocumentStartEvent;
-import org.snakeyaml.engine.v2.events.Event;
-import org.snakeyaml.engine.v2.events.ImplicitTuple;
-import org.snakeyaml.engine.v2.events.MappingEndEvent;
-import org.snakeyaml.engine.v2.events.MappingStartEvent;
-import org.snakeyaml.engine.v2.events.ScalarEvent;
-import org.snakeyaml.engine.v2.events.SequenceEndEvent;
-import org.snakeyaml.engine.v2.events.SequenceStartEvent;
-import org.snakeyaml.engine.v2.events.StreamEndEvent;
-import org.snakeyaml.engine.v2.events.StreamStartEvent;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.DumperOptions.FlowStyle;
+import org.yaml.snakeyaml.DumperOptions.ScalarStyle;
+import org.yaml.snakeyaml.emitter.Emitter;
+import org.yaml.snakeyaml.events.DocumentEndEvent;
+import org.yaml.snakeyaml.events.DocumentStartEvent;
+import org.yaml.snakeyaml.events.Event;
+import org.yaml.snakeyaml.events.ImplicitTuple;
+import org.yaml.snakeyaml.events.MappingEndEvent;
+import org.yaml.snakeyaml.events.MappingStartEvent;
+import org.yaml.snakeyaml.events.ScalarEvent;
+import org.yaml.snakeyaml.events.SequenceEndEvent;
+import org.yaml.snakeyaml.events.SequenceStartEvent;
+import org.yaml.snakeyaml.events.StreamEndEvent;
+import org.yaml.snakeyaml.events.StreamStartEvent;
 
 import jakarta.json.JsonException;
 import jakarta.json.JsonNumber;
@@ -53,46 +49,53 @@ import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonGenerationException;
 import jakarta.json.stream.JsonGenerator;
 
-class YamlGenerator implements JsonGenerator {
+class YamlGenerator1_1 implements JsonGenerator {
 
     static final String VALUE = "value";
 
     static final ImplicitTuple omitTags = new ImplicitTuple(true, true);
 
-    static final Event STREAM_START = new StreamStartEvent();
-    static final Event STREAM_END = new StreamEndEvent();
+    static final Event STREAM_START = new StreamStartEvent(null, null);
+    static final Event STREAM_END = new StreamEndEvent(null, null);
 
-    static final Event DOCUMENT_START_DEFAULT = new DocumentStartEvent(false, Optional.empty(), Collections.emptyMap());
-    static final Event DOCUMENT_START_EXPLICIT = new DocumentStartEvent(true, Optional.empty(), Collections.emptyMap());
+    static final Event DOCUMENT_START_DEFAULT = new DocumentStartEvent(null, null, false, null, Collections.emptyMap());
+    static final Event DOCUMENT_START_EXPLICIT = new DocumentStartEvent(null, null, true, null, Collections.emptyMap());
 
-    static final Event DOCUMENT_END_DEFAULT = new DocumentEndEvent(false);
-    static final Event DOCUMENT_END_EXPLICIT = new DocumentEndEvent(true);
+    static final Event DOCUMENT_END_DEFAULT = new DocumentEndEvent(null, null, false);
+    static final Event DOCUMENT_END_EXPLICIT = new DocumentEndEvent(null, null, true);
 
-    static final Event MAPPING_START = new MappingStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO);
-    static final Event MAPPING_END = new MappingEndEvent();
+    static final Event MAPPING_START = new MappingStartEvent(null, null, true, null, null, FlowStyle.AUTO);
+    static final Event MAPPING_END = new MappingEndEvent(null, null);
 
-    static final Event SEQUENCE_START = new SequenceStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO);
-    static final Event SEQUENCE_END = new SequenceEndEvent();
+    static final Event SEQUENCE_START = new SequenceStartEvent(null, null, true, null, null, FlowStyle.AUTO);
+    static final Event SEQUENCE_END = new SequenceEndEvent(null, null);
 
     static final StringQuotingChecker quoteChecker = new StringQuotingChecker();
 
-    final Closeable writer;
-    final StreamDataWriter yamlWriter;
-    final DumpSettings settings;
+    final Writer writer;
+    final DumperOptions settings;
     final Emitter emitter;
     final Deque<ContextType> context = new ArrayDeque<>();
 
-    YamlGenerator(DumpSettings settings, Writer writer) {
+    YamlGenerator1_1(DumperOptions settings, Writer writer) {
         this.writer = writer;
-        this.yamlWriter = new YamlWriterStream(writer);
         this.settings = settings;
-        this.emitter = new Emitter(settings, yamlWriter);
+        this.emitter = new Emitter(writer, settings);
+    }
+
+    void emit(Event event) {
+        try {
+            emitter.emit(event);
+        } catch (IOException e) {
+            // TODO: exception message
+            throw new JsonException("", e);
+        }
     }
 
     void ensureDocumentStarted() {
         if (context.isEmpty()) {
-            emitter.emit(STREAM_START);
-            emitter.emit(settings.isExplicitStart() ? DOCUMENT_START_EXPLICIT : DOCUMENT_START_DEFAULT);
+            emit(STREAM_START);
+            emit(settings.isExplicitStart() ? DOCUMENT_START_EXPLICIT : DOCUMENT_START_DEFAULT);
         }
     }
 
@@ -139,14 +142,14 @@ class YamlGenerator implements JsonGenerator {
             }
         }
 
-        emitter.emit(new ScalarEvent(Optional.empty(), Optional.empty(), omitTags, scalarValue, style));
+        emit(new ScalarEvent(null, null, omitTags, scalarValue, null, null, style));
     }
 
     @Override
     public JsonGenerator writeStartObject() {
         ensureDocumentStarted();
         context.push(ContextType.OBJECT);
-        emitter.emit(MAPPING_START);
+        emit(MAPPING_START);
         return this;
     }
 
@@ -155,7 +158,7 @@ class YamlGenerator implements JsonGenerator {
         Objects.requireNonNull(name, "name");
         writeKey(name);
         context.push(ContextType.OBJECT);
-        emitter.emit(MAPPING_START);
+        emit(MAPPING_START);
         return this;
     }
 
@@ -171,7 +174,7 @@ class YamlGenerator implements JsonGenerator {
     public JsonGenerator writeStartArray() {
         ensureDocumentStarted();
         context.push(ContextType.ARRAY);
-        emitter.emit(SEQUENCE_START);
+        emit(SEQUENCE_START);
         return this;
     }
 
@@ -180,7 +183,7 @@ class YamlGenerator implements JsonGenerator {
         Objects.requireNonNull(name, "name");
         writeKey(name);
         context.push(ContextType.ARRAY);
-        emitter.emit(SEQUENCE_START);
+        emit(SEQUENCE_START);
         return this;
     }
 
@@ -247,14 +250,14 @@ class YamlGenerator implements JsonGenerator {
         ContextType contextType = this.context.pop();
 
         if (contextType == ContextType.OBJECT) {
-            emitter.emit(MAPPING_END);
+            emit(MAPPING_END);
         } else {
-            emitter.emit(SEQUENCE_END);
+            emit(SEQUENCE_END);
         }
 
         if (this.context.isEmpty()) {
-            emitter.emit(settings.isExplicitEnd() ? DOCUMENT_END_EXPLICIT : DOCUMENT_END_DEFAULT);
-            emitter.emit(STREAM_END);
+            emit(settings.isExplicitEnd() ? DOCUMENT_END_EXPLICIT : DOCUMENT_END_DEFAULT);
+            emit(STREAM_END);
         }
 
         return this;
@@ -381,7 +384,12 @@ class YamlGenerator implements JsonGenerator {
 
     @Override
     public void flush() {
-        this.yamlWriter.flush();
+        try {
+            writer.flush();
+        } catch (IOException e) {
+            // TODO: exception message
+            throw new JsonException("", e);
+        }
     }
 
     enum ContextType {
@@ -389,38 +397,4 @@ class YamlGenerator implements JsonGenerator {
         OBJECT
     }
 
-    class YamlWriterStream implements StreamDataWriter {
-        final Writer writer;
-
-        YamlWriterStream(Writer writer) {
-            this.writer = writer;
-        }
-
-        @Override
-        public void write(String str) {
-            try {
-                writer.write(str);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        @Override
-        public void write(String str, int off, int len) {
-            try {
-                writer.write(str, off, len);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        @Override
-        public void flush() {
-            try {
-                writer.flush();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-    }
 }
