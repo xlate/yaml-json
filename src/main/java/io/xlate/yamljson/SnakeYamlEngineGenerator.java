@@ -15,8 +15,7 @@
  */
 package io.xlate.yamljson;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.FilterWriter;
 import java.io.Writer;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -41,7 +40,6 @@ import org.snakeyaml.engine.v2.events.SequenceStartEvent;
 import org.snakeyaml.engine.v2.events.StreamEndEvent;
 import org.snakeyaml.engine.v2.events.StreamStartEvent;
 
-import jakarta.json.JsonException;
 import jakarta.json.stream.JsonGenerator;
 
 class SnakeYamlEngineGenerator extends YamlGenerator<Event, ScalarStyle> implements JsonGenerator {
@@ -66,25 +64,22 @@ class SnakeYamlEngineGenerator extends YamlGenerator<Event, ScalarStyle> impleme
         Stream.of(StyleType.values()).forEach(v -> STYLES.put(v, ScalarStyle.valueOf(v.toString())));
     }
 
-    final StreamDataWriter yamlWriter;
     final DumpSettings settings;
     final Emitter emitter;
 
-    SnakeYamlEngineGenerator(DumpSettings settings, Writer writer) {
+    SnakeYamlEngineGenerator(DumpSettings settings, YamlWriterStream writer) {
         super(EVENTS, STYLES, writer, settings.isExplicitStart(), settings.isExplicitEnd());
-        this.yamlWriter = new YamlWriterStream(writer);
         this.settings = settings;
-        this.emitter = new Emitter(settings, yamlWriter);
+        this.emitter = new Emitter(settings, writer);
+    }
+
+    SnakeYamlEngineGenerator(DumpSettings settings, Writer writer) {
+        this(settings, new YamlWriterStream(writer));
     }
 
     @Override
-    protected void emit(Event event) {
-        try {
-            emitter.emit(event);
-        } catch (UncheckedIOException e) {
-            // TODO: exception message
-            throw new JsonException("", e.getCause());
-        }
+    protected void emitEvent(Event event) {
+        emitter.emit(event);
     }
 
     @Override
@@ -92,43 +87,27 @@ class SnakeYamlEngineGenerator extends YamlGenerator<Event, ScalarStyle> impleme
         return new ScalarEvent(Optional.empty(), Optional.empty(), omitTags, scalarValue, style);
     }
 
-    @Override
-    public void flush() {
-        this.yamlWriter.flush();
-    }
-
-    class YamlWriterStream implements StreamDataWriter {
-        final Writer writer;
+    static class YamlWriterStream extends FilterWriter implements StreamDataWriter {
 
         YamlWriterStream(Writer writer) {
-            this.writer = writer;
+            super(writer);
         }
 
         @Override
         public void write(String str) {
-            try {
-                writer.write(str);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            execute("writing YAML", () -> out.write(str));
         }
 
         @Override
         public void write(String str, int off, int len) {
-            try {
-                writer.write(str, off, len);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            execute("writing YAML", () -> out.write(str, off, len));
         }
 
         @Override
         public void flush() {
-            try {
-                writer.flush();
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            execute("flushing YAML writer", out::flush);
         }
+
     }
+
 }

@@ -16,6 +16,7 @@
 package io.xlate.yamljson;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -33,6 +34,11 @@ import jakarta.json.stream.JsonGenerationException;
 import jakarta.json.stream.JsonGenerator;
 
 abstract class YamlGenerator<E, S> implements JsonGenerator {
+
+    enum ContextType {
+        ARRAY,
+        OBJECT
+    }
 
     enum EventType {
         STREAM_START,
@@ -55,6 +61,14 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         DOUBLE_QUOTED
     }
 
+    interface EventEmitter<E> {
+        void emit(E event) throws IOException;
+    }
+
+    interface IOOperation {
+        void execute() throws IOException;
+    }
+
     static final String VALUE = "value";
 
     static final StringQuotingChecker quoteChecker = new StringQuotingChecker();
@@ -74,7 +88,8 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         this.explicitEnd = explicitEnd;
     }
 
-    protected abstract void emit(E event);
+    protected abstract void emitEvent(E event) throws IOException;
+    protected abstract E buildScalarEvent(String scalarValue, S style);
 
     void ensureDocumentStarted() {
         if (context.isEmpty()) {
@@ -91,6 +106,14 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         }
     }
 
+    void emit(E event) {
+        try {
+            emitEvent(event);
+        } catch (IOException e) {
+            throw new JsonException("IOException while emitting YAML", e);
+        }
+    }
+
     void emitScalar(Object value) {
         emitScalar(value, true, null);
     }
@@ -98,8 +121,6 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
     void emitScalar(String value) {
         emitScalar(value, false, quoteChecker::needToQuoteValue);
     }
-
-    protected abstract E buildScalarEvent(String scalarValue, S style);
 
     void emitScalar(Object value, boolean forcePlain, Predicate<String> quoteCheck) {
         final String scalarValue;
@@ -131,6 +152,16 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         }
 
         emit(buildScalarEvent(scalarValue, style));
+    }
+
+    protected static void execute(String name, IOOperation operation) {
+        try {
+            operation.execute();
+        } catch (IOException e) {
+            throw new JsonException("IOException " + name, e);
+        } catch (UncheckedIOException e) {
+            throw new JsonException("IOException " + name, e.getCause());
+        }
     }
 
     @Override
@@ -360,21 +391,19 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
 
     @Override
     public void close() {
-        try {
+        execute("closing YAML output", () -> {
             flush();
             writer.close();
-        } catch (IOException e) {
-            throw new JsonException("Exception closing YAML output", e);
-        }
+        });
 
         if (!context.isEmpty()) {
             throw new JsonGenerationException("Output YAML is incomplete");
         }
     }
 
-    enum ContextType {
-        ARRAY,
-        OBJECT
+    @Override
+    public void flush() {
+        execute("flushing YAML writer", writer::flush);
     }
 
 }

@@ -38,7 +38,6 @@ import org.yaml.snakeyaml.events.SequenceStartEvent;
 import org.yaml.snakeyaml.events.StreamEndEvent;
 import org.yaml.snakeyaml.events.StreamStartEvent;
 
-import jakarta.json.JsonException;
 import jakarta.json.stream.JsonGenerator;
 
 class SnakeYamlGenerator extends YamlGenerator<Event, ScalarStyle> implements JsonGenerator {
@@ -73,28 +72,13 @@ class SnakeYamlGenerator extends YamlGenerator<Event, ScalarStyle> implements Js
     }
 
     @Override
-    protected void emit(Event event) {
-        try {
-            emitter.emit(event);
-        } catch (IOException e) {
-            // TODO: exception message
-            throw new JsonException("", e);
-        }
+    protected void emitEvent(Event event) throws IOException {
+        emitter.emit(event);
     }
 
     @Override
     protected Event buildScalarEvent(String scalarValue, ScalarStyle style) {
         return new ScalarEvent(null, null, omitTags, scalarValue, null, null, style);
-    }
-
-    @Override
-    public void flush() {
-        try {
-            writer.flush();
-        } catch (IOException e) {
-            // TODO: exception message
-            throw new JsonException("", e);
-        }
     }
 
 }

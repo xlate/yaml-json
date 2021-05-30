@@ -12,7 +12,7 @@ import org.yaml.snakeyaml.LoaderOptions;
 interface SettingsBuilder {
 
     default LoaderOptions buildLoaderOptions(Map<String, ?> properties) {
-        /* TODO Map to snakeyaml settings */
+        // No load properties supported currently
         return new LoaderOptions();
     }
 
@@ -24,7 +24,7 @@ interface SettingsBuilder {
     }
 
     default LoadSettings buildLoadSettings(Map<String, ?> properties) {
-        /* TODO Map to snakeyaml settings */
+        // No load properties supported currently
         return LoadSettings.builder().build();
     }
 

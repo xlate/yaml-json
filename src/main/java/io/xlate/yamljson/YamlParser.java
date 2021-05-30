@@ -318,7 +318,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
             }
             break;
         case "Alias":
-            // TODO Support for aliases
+            // Aliases skipped - not supported
             eventFound = false;
             break;
         case "StreamStart":
