@@ -49,9 +49,9 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
     public JsonGenerator createGenerator(Writer writer) {
         Objects.requireNonNull(writer, "writer");
         if (useSnakeYamlEngine) {
-            return new YamlGenerator((org.snakeyaml.engine.v2.api.DumpSettings) this.snakeYamlSettings, writer);
+            return new SnakeYamlEngineGenerator((org.snakeyaml.engine.v2.api.DumpSettings) this.snakeYamlSettings, writer);
         }
-        return new YamlGenerator1_1((org.yaml.snakeyaml.DumperOptions) this.snakeYamlSettings, writer);
+        return new SnakeYamlGenerator((org.yaml.snakeyaml.DumperOptions) this.snakeYamlSettings, writer);
     }
 
     @Override

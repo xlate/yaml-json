@@ -41,7 +41,7 @@ import org.yaml.snakeyaml.events.StreamStartEvent;
 import jakarta.json.JsonException;
 import jakarta.json.stream.JsonGenerator;
 
-class YamlGenerator1_1 extends AbstractYamlGenerator<Event, ScalarStyle> implements JsonGenerator {
+class SnakeYamlGenerator extends AbstractYamlGenerator<Event, ScalarStyle> implements JsonGenerator {
 
     static final ImplicitTuple omitTags = new ImplicitTuple(true, true);
 
@@ -66,7 +66,7 @@ class YamlGenerator1_1 extends AbstractYamlGenerator<Event, ScalarStyle> impleme
     final DumperOptions settings;
     final Emitter emitter;
 
-    YamlGenerator1_1(DumperOptions settings, Writer writer) {
+    SnakeYamlGenerator(DumperOptions settings, Writer writer) {
         super(EVENTS, STYLES, writer, settings.isExplicitStart(), settings.isExplicitEnd());
         this.settings = settings;
         this.emitter = new Emitter(writer, settings);
