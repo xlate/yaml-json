@@ -65,7 +65,7 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
         }
     }
 
-    YamlParserCommon createYamlParser(Reader reader) {
+    AbstractYamlParser<?, ?> createYamlParser(Reader reader) {
         if (useSnakeYamlEngine) {
             var provider = (org.snakeyaml.engine.v2.api.lowlevel.Parse) snakeYamlProvider;
             return new YamlParser(provider.parseReader(reader).iterator(), reader);

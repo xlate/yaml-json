@@ -27,9 +27,11 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import jakarta.json.JsonException;
+import jakarta.json.stream.JsonLocation;
+import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParsingException;
 
-abstract class AbstractYamlParser<E, M> implements YamlParserCommon {
+abstract class AbstractYamlParser<E, M> implements JsonParser, JsonLocation {
 
     enum NumberType {
         INTEGER,
@@ -428,6 +430,11 @@ abstract class AbstractYamlParser<E, M> implements YamlParserCommon {
     }
 
     @Override
+    public int getInt() {
+        return (int) getLong();
+    }
+
+    @Override
     public String getString() {
         assertEventValueString();
         return this.currentValue;
@@ -439,25 +446,31 @@ abstract class AbstractYamlParser<E, M> implements YamlParserCommon {
         return currentNumber.scale() == 0;
     }
 
-    @Override
     public boolean isPositiveInfinity() {
         assertEventValue();
         return this.currentNumberType == NumberType.POSITIVE_INFINITY;
     }
 
-    @Override
     public boolean isNegativeInfinity() {
         assertEventValue();
         return this.currentNumberType == NumberType.NEGATIVE_INFINITY;
     }
 
-    @Override
+    public boolean isInfinite() {
+        return isPositiveInfinity() || isNegativeInfinity();
+    }
+
     public boolean isNaN() {
         assertEventValue();
         return this.currentNumberType == NumberType.NAN;
     }
 
     // JsonLocation
+
+    @Override
+    public JsonLocation getLocation() {
+        return this;
+    }
 
     @Override
     public long getLineNumber() {
