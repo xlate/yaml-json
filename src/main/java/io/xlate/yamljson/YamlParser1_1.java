@@ -18,16 +18,14 @@ package io.xlate.yamljson;
 import java.io.Reader;
 import java.util.Iterator;
 
-import org.yaml.snakeyaml.error.Mark;
-
-final class YamlParser1_1 extends AbstractYamlParser<org.yaml.snakeyaml.events.Event, Mark> {
+final class YamlParser1_1 extends AbstractYamlParser<org.yaml.snakeyaml.events.Event, org.yaml.snakeyaml.error.Mark> {
 
     YamlParser1_1(Iterator<org.yaml.snakeyaml.events.Event> yamlEvents, Reader yamlReader) {
         super(yamlEvents, yamlReader);
     }
 
     @Override
-    protected Mark getMark() {
+    protected org.yaml.snakeyaml.error.Mark getMark() {
         if (currentYamlEvent != null) {
             return currentYamlEvent.getStartMark();
         }
@@ -36,17 +34,17 @@ final class YamlParser1_1 extends AbstractYamlParser<org.yaml.snakeyaml.events.E
     }
 
     @Override
-    protected int getMarkLine(Mark mark) {
+    protected int getMarkLine(org.yaml.snakeyaml.error.Mark mark) {
         return mark.getLine();
     }
 
     @Override
-    protected int getMarkColumn(Mark mark) {
+    protected int getMarkColumn(org.yaml.snakeyaml.error.Mark mark) {
         return mark.getColumn();
     }
 
     @Override
-    protected int getMarkIndex(Mark mark) {
+    protected int getMarkIndex(org.yaml.snakeyaml.error.Mark mark) {
         return mark.getIndex();
     }
 
@@ -57,12 +55,12 @@ final class YamlParser1_1 extends AbstractYamlParser<org.yaml.snakeyaml.events.E
 
     @Override
     protected String getValue(org.yaml.snakeyaml.events.Event event) {
-        return org.yaml.snakeyaml.events.ScalarEvent.class.cast(event).getValue();
+        return ((org.yaml.snakeyaml.events.ScalarEvent) event).getValue();
     }
 
     @Override
     protected boolean isPlain(org.yaml.snakeyaml.events.Event event) {
-        return org.yaml.snakeyaml.events.ScalarEvent.class.cast(event).isPlain();
+        return ((org.yaml.snakeyaml.events.ScalarEvent) event).isPlain();
     }
 
 }
