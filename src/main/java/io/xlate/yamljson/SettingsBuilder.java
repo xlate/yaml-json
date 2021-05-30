@@ -6,16 +6,14 @@ import java.util.function.Consumer;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.DumpSettingsBuilder;
 import org.snakeyaml.engine.v2.api.LoadSettings;
-import org.snakeyaml.engine.v2.api.LoadSettingsBuilder;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 
 interface SettingsBuilder {
 
     default LoaderOptions buildLoaderOptions(Map<String, ?> properties) {
-        LoaderOptions settings = new LoaderOptions();
         /* TODO Map to snakeyaml settings */
-        return settings;
+        return new LoaderOptions();
     }
 
     default DumperOptions buildDumperOptions(Map<String, ?> properties) {
@@ -26,9 +24,8 @@ interface SettingsBuilder {
     }
 
     default LoadSettings buildLoadSettings(Map<String, ?> properties) {
-        LoadSettingsBuilder settings = LoadSettings.builder();
         /* TODO Map to snakeyaml settings */
-        return settings.build();
+        return LoadSettings.builder().build();
     }
 
     default DumpSettings buildDumpSettings(Map<String, ?> properties) {
