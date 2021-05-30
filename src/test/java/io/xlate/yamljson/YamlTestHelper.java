@@ -22,20 +22,28 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.json.JsonReader;
 import jakarta.json.JsonWriter;
 
 final class YamlTestHelper {
 
-    static final String VERSIONS_SOURCE = "io.xlate.yamljson.Yaml$Settings#supportedVersions";
+    static final String VERSIONS_SOURCE = "io.xlate.yamljson.YamlTestHelper#getTestVersions";
 
     interface ThrowingConsumer<T> {
         void accept(T t) throws Exception;
     }
 
+    static Set<String> getTestVersions() {
+        return Set.of(System.getProperty(Yaml.Settings.YAML_VERSION,
+                                         Yaml.Settings.supportedVersions().stream().collect(Collectors.joining(",")))
+                            .split(","));
+    }
+
     static void testEachVersion(ThrowingConsumer<String> testCase) {
-        for (String version : Yaml.Settings.supportedVersions()) {
+        for (String version : getTestVersions()) {
             try {
                 testCase.accept(version);
             } catch (Exception e) {

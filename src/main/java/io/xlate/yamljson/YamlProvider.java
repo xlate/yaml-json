@@ -43,11 +43,28 @@ import jakarta.json.stream.JsonParserFactory;
  */
 public final class YamlProvider extends JsonProvider {
 
-    private final JsonParserFactory defaultParserFactory = new YamlParserFactory();
-    private final JsonReaderFactory defaultReaderFactory = new YamlReaderFactory();
+    private final JsonParserFactory defaultParserFactory;
+    private final JsonReaderFactory defaultReaderFactory;
+    private final JsonGeneratorFactory defaultGeneratorFactory;
+    private final JsonWriterFactory defaultWriterFactory;
 
-    private final JsonGeneratorFactory defaultGeneratorFactory = new YamlGeneratorFactory();
-    private final JsonWriterFactory defaultWriterFactory = new YamlWriterFactory();
+    public YamlProvider() {
+        String defaultVersion;
+
+        try {
+            Class.forName("org.snakeyaml.engine.v2.api.lowlevel.Parse");
+            defaultVersion = Yaml.Settings.YAML_VERSION_1_2;
+        } catch (Exception | NoClassDefFoundError e) {
+            defaultVersion = Yaml.Settings.YAML_VERSION_1_1;
+        }
+
+        var defaultProperties = Map.of(Yaml.Settings.YAML_VERSION, defaultVersion);
+
+        defaultParserFactory = new YamlParserFactory(defaultProperties);
+        defaultReaderFactory = new YamlReaderFactory(defaultProperties);
+        defaultGeneratorFactory = new YamlGeneratorFactory(defaultProperties);
+        defaultWriterFactory = new YamlWriterFactory(defaultProperties);
+    }
 
     @Override
     public JsonParser createParser(Reader reader) {

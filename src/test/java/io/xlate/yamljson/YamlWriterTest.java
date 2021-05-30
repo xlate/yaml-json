@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 
@@ -44,7 +43,7 @@ class YamlWriterTest {
 
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
-    void testWriteObject(String version) throws IOException {
+    void testWriteObject(String version) {
         assertDoesNotThrow(() -> {
             StringWriter sink = new StringWriter();
 
@@ -63,7 +62,7 @@ class YamlWriterTest {
 
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
-    void testScalarStyles(String version) throws IOException {
+    void testScalarStyles(String version) {
         StringWriter sink = new StringWriter();
 
         try (JsonWriter writer = createWriter(version, sink)) {

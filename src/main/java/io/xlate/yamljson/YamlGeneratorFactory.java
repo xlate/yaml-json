@@ -33,10 +33,6 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
     private final boolean useSnakeYamlEngine;
     private final Object snakeYamlSettings;
 
-    YamlGeneratorFactory() {
-        this(Collections.emptyMap());
-    }
-
     YamlGeneratorFactory(Map<String, ?> properties) {
         this.properties = properties;
         Object version = properties.get(Yaml.Settings.YAML_VERSION);

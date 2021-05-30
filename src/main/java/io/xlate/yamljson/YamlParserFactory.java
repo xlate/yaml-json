@@ -42,10 +42,6 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
     private final boolean useSnakeYamlEngine;
     private final Object snakeYamlProvider;
 
-    YamlParserFactory() {
-        this(Collections.emptyMap());
-    }
-
     YamlParserFactory(Map<String, ?> properties) {
         this.properties = properties;
 
