@@ -37,7 +37,7 @@ class YamlReaderFactory implements JsonReaderFactory, SettingsBuilder {
     }
 
     private YamlReader createYamlReader(Reader reader) {
-        return new YamlReader(parserFactory.createYamlParser(reader), reader);
+        return new YamlReader(parserFactory.createYamlParser(reader));
     }
 
     @Override

@@ -48,14 +48,14 @@ class StringQuotingChecker {
         // First, reserved name starting chars:
         case 'f': // false
         case 'F': // False
-            return YamlParser.VALUES_FALSE.contains(value);
+            return AbstractYamlParser.VALUES_FALSE.contains(value);
         case 'n': // null
         case 'N': // Null
         case '~':
-            return YamlParser.VALUES_NULL.contains(value);
+            return AbstractYamlParser.VALUES_NULL.contains(value);
         case 't': // true
         case 'T': // True
-            return YamlParser.VALUES_TRUE.contains(value);
+            return AbstractYamlParser.VALUES_TRUE.contains(value);
         default:
             return false;
         }

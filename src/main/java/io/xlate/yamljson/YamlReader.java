@@ -15,7 +15,6 @@
  */
 package io.xlate.yamljson;
 
-import java.io.Reader;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -38,7 +37,7 @@ class YamlReader implements JsonReader {
     final YamlParserCommon parser;
     boolean readable = true;
 
-    YamlReader(YamlParserCommon parser, Reader yamlReader) {
+    YamlReader(YamlParserCommon parser) {
         this.parser = parser;
     }
 
