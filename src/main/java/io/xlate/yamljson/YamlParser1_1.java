@@ -17,8 +17,6 @@ package io.xlate.yamljson;
 
 import java.io.Reader;
 import java.util.Iterator;
-import java.util.Optional;
-import java.util.function.Function;
 
 import org.yaml.snakeyaml.error.Mark;
 
@@ -29,27 +27,27 @@ final class YamlParser1_1 extends AbstractYamlParser<org.yaml.snakeyaml.events.E
     }
 
     @Override
-    public long getLineNumber() {
-        return currentEventPosition(mark -> mark.getLine() + 1);
-    }
-
-    @Override
-    public long getColumnNumber() {
-        return currentEventPosition(mark -> mark.getColumn() + 1);
-    }
-
-    @Override
-    public long getStreamOffset() {
-        return currentEventPosition(Mark::getIndex);
-    }
-
-    @Override
-    protected long currentEventPosition(Function<Mark, Integer> mapper) {
+    protected Mark getMark() {
         if (currentYamlEvent != null) {
-            return Optional.ofNullable(currentYamlEvent.getStartMark()).map(mapper).orElse(-1);
+            return currentYamlEvent.getStartMark();
         }
 
-        return -1;
+        return null;
+    }
+
+    @Override
+    protected int getMarkLine(Mark mark) {
+        return mark.getLine();
+    }
+
+    @Override
+    protected int getMarkColumn(Mark mark) {
+        return mark.getColumn();
+    }
+
+    @Override
+    protected int getMarkIndex(Mark mark) {
+        return mark.getIndex();
     }
 
     @Override

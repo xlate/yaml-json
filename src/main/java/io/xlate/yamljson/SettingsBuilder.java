@@ -1,6 +1,7 @@
 package io.xlate.yamljson;
 
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.DumpSettingsBuilder;
@@ -13,67 +14,35 @@ interface SettingsBuilder {
 
     default LoaderOptions buildLoaderOptions(Map<String, ?> properties) {
         LoaderOptions settings = new LoaderOptions();
-
-        properties.entrySet().forEach(property -> {
-            /* TODO Map to snakeyaml settings */
-        });
-
+        /* TODO Map to snakeyaml settings */
         return settings;
     }
 
     default DumperOptions buildDumperOptions(Map<String, ?> properties) {
         DumperOptions settings = new DumperOptions();
-
-        properties.entrySet().forEach(property -> {
-            final String name = property.getKey();
-            final Object value = property.getValue();
-
-            switch (name) {
-            case Yaml.Settings.DUMP_EXPLICIT_START:
-                settings.setExplicitStart(Boolean.valueOf(String.valueOf(value)));
-                break;
-            case Yaml.Settings.DUMP_EXPLICIT_END:
-                settings.setExplicitEnd(Boolean.valueOf(String.valueOf(value)));
-                break;
-            default:
-                break;
-            }
-            /* TODO Map to snakeyaml settings */
-        });
-
+        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, settings::setExplicitStart);
+        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, settings::setExplicitEnd);
         return settings;
-    }
-
-    default DumpSettings buildDumpSettings(Map<String, ?> properties) {
-        DumpSettingsBuilder settings = DumpSettings.builder();
-
-        properties.entrySet().forEach(property -> {
-            final String name = property.getKey();
-            final Object value = property.getValue();
-
-            switch (name) {
-            case Yaml.Settings.DUMP_EXPLICIT_START:
-                settings.setExplicitStart(Boolean.valueOf(String.valueOf(value)));
-                break;
-            case Yaml.Settings.DUMP_EXPLICIT_END:
-                settings.setExplicitEnd(Boolean.valueOf(String.valueOf(value)));
-                break;
-            default:
-                break;
-            }
-            /* TODO Map to snakeyaml settings */
-        });
-
-        return settings.build();
     }
 
     default LoadSettings buildLoadSettings(Map<String, ?> properties) {
         LoadSettingsBuilder settings = LoadSettings.builder();
-
-        properties.entrySet().forEach(property -> {
-            /* TODO Map to snakeyaml settings */
-        });
-
+        /* TODO Map to snakeyaml settings */
         return settings.build();
+    }
+
+    default DumpSettings buildDumpSettings(Map<String, ?> properties) {
+        DumpSettingsBuilder settings = DumpSettings.builder();
+        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, settings::setExplicitStart);
+        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, settings::setExplicitEnd);
+        return settings.build();
+    }
+
+    default void setBoolean(Map<String, ?> properties, String key, Consumer<Boolean> setter) {
+        setter.accept(getBoolean(properties, key));
+    }
+
+    default Boolean getBoolean(Map<String, ?> properties, String key) {
+        return Boolean.valueOf(String.valueOf(properties.get(key)));
     }
 }

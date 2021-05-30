@@ -19,7 +19,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.StreamDataWriter;
@@ -45,29 +48,30 @@ class YamlGenerator extends AbstractYamlGenerator<Event, ScalarStyle> implements
 
     static final ImplicitTuple omitTags = new ImplicitTuple(true, true);
 
-    static final Event STREAM_START = new StreamStartEvent();
-    static final Event STREAM_END = new StreamEndEvent();
+    static final Map<EventType, Event> EVENTS = new EnumMap<>(EventType.class);
+    static final Map<StyleType, ScalarStyle> STYLES = new EnumMap<>(StyleType.class);
 
-    static final Event DOCUMENT_START_DEFAULT = new DocumentStartEvent(false, Optional.empty(), Collections.emptyMap());
-    static final Event DOCUMENT_START_EXPLICIT = new DocumentStartEvent(true, Optional.empty(), Collections.emptyMap());
+    static {
+        EVENTS.put(EventType.STREAM_START, new StreamStartEvent());
+        EVENTS.put(EventType.STREAM_END, new StreamEndEvent());
+        EVENTS.put(EventType.DOCUMENT_START_DEFAULT, new DocumentStartEvent(false, Optional.empty(), Collections.emptyMap()));
+        EVENTS.put(EventType.DOCUMENT_START_EXPLICIT, new DocumentStartEvent(true, Optional.empty(), Collections.emptyMap()));
+        EVENTS.put(EventType.DOCUMENT_END_DEFAULT, new DocumentEndEvent(false));
+        EVENTS.put(EventType.DOCUMENT_END_EXPLICIT, new DocumentEndEvent(true));
+        EVENTS.put(EventType.MAPPING_START, new MappingStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO));
+        EVENTS.put(EventType.MAPPING_END, new MappingEndEvent());
+        EVENTS.put(EventType.SEQUENCE_START, new SequenceStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO));
+        EVENTS.put(EventType.SEQUENCE_END, new SequenceEndEvent());
 
-    static final Event DOCUMENT_END_DEFAULT = new DocumentEndEvent(false);
-    static final Event DOCUMENT_END_EXPLICIT = new DocumentEndEvent(true);
-
-    static final Event MAPPING_START = new MappingStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO);
-    static final Event MAPPING_END = new MappingEndEvent();
-
-    static final Event SEQUENCE_START = new SequenceStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO);
-    static final Event SEQUENCE_END = new SequenceEndEvent();
-
-    static final StringQuotingChecker quoteChecker = new StringQuotingChecker();
+        Stream.of(StyleType.values()).forEach(v -> STYLES.put(v, ScalarStyle.valueOf(v.toString())));
+    }
 
     final StreamDataWriter yamlWriter;
     final DumpSettings settings;
     final Emitter emitter;
 
     YamlGenerator(DumpSettings settings, Writer writer) {
-        super(writer);
+        super(EVENTS, STYLES, writer, settings.isExplicitStart(), settings.isExplicitEnd());
         this.yamlWriter = new YamlWriterStream(writer);
         this.settings = settings;
         this.emitter = new Emitter(settings, yamlWriter);
@@ -84,89 +88,10 @@ class YamlGenerator extends AbstractYamlGenerator<Event, ScalarStyle> implements
     }
 
     @Override
-    protected boolean isExplicitStart() {
-        return settings.isExplicitStart();
-    }
-
-    @Override
-    protected boolean isExplicitEnd() {
-        return settings.isExplicitEnd();
-    }
-
-    @Override
-    protected Event getStreamStart() {
-        return STREAM_START;
-    }
-
-    @Override
-    protected Event getStreamEnd() {
-        return STREAM_END;
-    }
-
-    @Override
-    public Event getDocumentStartExplicit() {
-        return DOCUMENT_START_EXPLICIT;
-    }
-
-    @Override
-    public Event getDocumentStartDefault() {
-        return DOCUMENT_START_DEFAULT;
-    }
-
-    @Override
-    public Event getDocumentEndExplicit() {
-        return DOCUMENT_END_EXPLICIT;
-    }
-
-    @Override
-    public Event getDocumentEndDefault() {
-        return DOCUMENT_END_DEFAULT;
-    }
-
-    @Override
-    public Event getMappingStart() {
-        return MAPPING_START;
-    }
-
-    @Override
-    public Event getMappingEnd() {
-        return MAPPING_END;
-    }
-
-    @Override
-    public Event getSequenceStart() {
-        return SEQUENCE_START;
-    }
-
-    @Override
-    public Event getSequenceEnd() {
-        return SEQUENCE_END;
-    }
-
-    @Override
-    protected ScalarStyle getPlainStyle() {
-        return ScalarStyle.PLAIN;
-    }
-
-    @Override
-    protected ScalarStyle getLiteralStyle() {
-        return ScalarStyle.LITERAL;
-    }
-
-    @Override
-    protected ScalarStyle getSingleQuotedStyle() {
-        return ScalarStyle.SINGLE_QUOTED;
-    }
-
-    @Override
-    protected ScalarStyle getDoubleQuotedStyle() {
-        return ScalarStyle.DOUBLE_QUOTED;
-    }
-
-    @Override
     protected Event buildScalarEvent(String scalarValue, ScalarStyle style) {
         return new ScalarEvent(Optional.empty(), Optional.empty(), omitTags, scalarValue, style);
     }
+
     @Override
     public void flush() {
         this.yamlWriter.flush();

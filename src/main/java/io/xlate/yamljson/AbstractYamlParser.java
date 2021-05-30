@@ -24,7 +24,6 @@ import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.logging.Logger;
 
 import jakarta.json.JsonException;
@@ -460,7 +459,28 @@ abstract class AbstractYamlParser<E, M> implements YamlParserCommon {
 
     // JsonLocation
 
-    protected abstract long currentEventPosition(Function<M, Integer> mapper); // NOSONAR
+    @Override
+    public long getLineNumber() {
+        M mark = getMark();
+        return mark != null ? getMarkLine(mark) + 1 : -1;
+    }
+
+    @Override
+    public long getColumnNumber() {
+        M mark = getMark();
+        return mark != null ? getMarkColumn(mark) + 1 : -1;
+    }
+
+    @Override
+    public long getStreamOffset() {
+        M mark = getMark();
+        return mark != null ? getMarkIndex(mark) : -1;
+    }
+
+    protected abstract M getMark();
+    protected abstract int getMarkLine(M mark);
+    protected abstract int getMarkColumn(M mark);
+    protected abstract int getMarkIndex(M mark);
 
     protected abstract String getEventId(E event);
 

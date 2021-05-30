@@ -34,40 +34,54 @@ import jakarta.json.stream.JsonGenerator;
 
 abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
 
+    enum EventType {
+        STREAM_START,
+        STREAM_END,
+        DOCUMENT_START_DEFAULT,
+        DOCUMENT_START_EXPLICIT,
+        DOCUMENT_END_DEFAULT,
+        DOCUMENT_END_EXPLICIT,
+        MAPPING_START,
+        MAPPING_END,
+        SEQUENCE_START,
+        SEQUENCE_END
+    }
+
+    enum StyleType {
+        PLAIN,
+        LITERAL,
+        FOLDED,
+        SINGLE_QUOTED,
+        DOUBLE_QUOTED
+    }
+
     static final String VALUE = "value";
 
     static final StringQuotingChecker quoteChecker = new StringQuotingChecker();
 
+    protected final Map<EventType, E> eventTypes;
+    protected final Map<StyleType, S> styleTypes;
     protected final Writer writer;
+    final boolean explicitStart;
+    final boolean explicitEnd;
     final Deque<ContextType> context = new ArrayDeque<>();
 
-    AbstractYamlGenerator(Writer writer) {
+    AbstractYamlGenerator(Map<EventType, E> eventTypes, Map<StyleType, S> styleTypes, Writer writer, boolean explicitStart, boolean explicitEnd) {
+        this.eventTypes = eventTypes;
+        this.styleTypes = styleTypes;
         this.writer = writer;
+        this.explicitStart = explicitStart;
+        this.explicitEnd = explicitEnd;
     }
 
     protected abstract void emit(E event);
-    protected abstract boolean isExplicitStart();
-    protected abstract boolean isExplicitEnd();
-
-    protected abstract E getStreamStart();
-    protected abstract E getStreamEnd();
-
-    protected abstract E getDocumentStartDefault();
-    protected abstract E getDocumentStartExplicit();
-
-    protected abstract E getDocumentEndDefault();
-    protected abstract E getDocumentEndExplicit();
-
-    protected abstract E getMappingStart();
-    protected abstract E getMappingEnd();
-
-    protected abstract E getSequenceStart();
-    protected abstract E getSequenceEnd();
 
     void ensureDocumentStarted() {
         if (context.isEmpty()) {
-            emit(getStreamStart());
-            emit(isExplicitStart() ? getDocumentStartExplicit() : getDocumentStartDefault());
+            emit(eventTypes.get(EventType.STREAM_START));
+            emit(explicitStart ?
+                eventTypes.get(EventType.DOCUMENT_START_EXPLICIT) :
+                    eventTypes.get(EventType.DOCUMENT_START_DEFAULT));
         }
     }
 
@@ -87,18 +101,13 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
 
     protected abstract E buildScalarEvent(String scalarValue, S style);
 
-    protected abstract S getPlainStyle();
-    protected abstract S getLiteralStyle();
-    protected abstract S getSingleQuotedStyle();
-    protected abstract S getDoubleQuotedStyle();
-
     void emitScalar(Object value, boolean forcePlain, Predicate<String> quoteCheck) {
         final String scalarValue;
         final S style;
 
         if (forcePlain) {
             scalarValue = String.valueOf(value);
-            style = getPlainStyle();
+            style = styleTypes.get(StyleType.PLAIN);
         } else {
             scalarValue = String.valueOf(value);
             boolean containsNewLine = scalarValue.indexOf('\n') > -1;
@@ -107,17 +116,17 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
 
             if (containsNewLine) {
                 // TODO Allow for folded scalar style via configuration
-                style = getLiteralStyle();
+                style = styleTypes.get(StyleType.LITERAL);
             } else if (containsDoubleQuote && containsSingleQuote) {
-                style = getLiteralStyle();
+                style = styleTypes.get(StyleType.LITERAL);
             } else if (containsDoubleQuote) {
-                style = getSingleQuotedStyle();
+                style = styleTypes.get(StyleType.SINGLE_QUOTED);
             } else if (containsSingleQuote) {
-                style = getDoubleQuotedStyle();
+                style = styleTypes.get(StyleType.DOUBLE_QUOTED);
             } else if (quoteCheck.test(scalarValue)) {
-                style = getSingleQuotedStyle();
+                style = styleTypes.get(StyleType.SINGLE_QUOTED);
             } else {
-                style = getPlainStyle();
+                style = styleTypes.get(StyleType.PLAIN);
             }
         }
 
@@ -128,7 +137,7 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
     public JsonGenerator writeStartObject() {
         ensureDocumentStarted();
         context.push(ContextType.OBJECT);
-        emit(getMappingStart());
+        emit(eventTypes.get(EventType.MAPPING_START));
         return this;
     }
 
@@ -137,7 +146,7 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
         Objects.requireNonNull(name, "name");
         writeKey(name);
         context.push(ContextType.OBJECT);
-        emit(getMappingStart());
+        emit(eventTypes.get(EventType.MAPPING_START));
         return this;
     }
 
@@ -153,7 +162,7 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
     public JsonGenerator writeStartArray() {
         ensureDocumentStarted();
         context.push(ContextType.ARRAY);
-        emit(getSequenceStart());
+        emit(eventTypes.get(EventType.SEQUENCE_START));
         return this;
     }
 
@@ -162,7 +171,7 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
         Objects.requireNonNull(name, "name");
         writeKey(name);
         context.push(ContextType.ARRAY);
-        emit(getSequenceStart());
+        emit(eventTypes.get(EventType.SEQUENCE_START));
         return this;
     }
 
@@ -229,14 +238,16 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
         ContextType contextType = this.context.pop();
 
         if (contextType == ContextType.OBJECT) {
-            emit(getMappingEnd());
+            emit(eventTypes.get(EventType.MAPPING_END));
         } else {
-            emit(getSequenceEnd());
+            emit(eventTypes.get(EventType.SEQUENCE_END));
         }
 
         if (this.context.isEmpty()) {
-            emit(isExplicitEnd() ? getDocumentEndExplicit() : getDocumentEndDefault());
-            emit(getStreamEnd());
+            emit(explicitEnd ?
+                eventTypes.get(EventType.DOCUMENT_END_EXPLICIT) :
+                    eventTypes.get(EventType.DOCUMENT_END_DEFAULT));
+            emit(eventTypes.get(EventType.STREAM_END));
         }
 
         return this;
