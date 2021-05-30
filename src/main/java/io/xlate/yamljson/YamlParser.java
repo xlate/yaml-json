@@ -31,7 +31,7 @@ import jakarta.json.stream.JsonLocation;
 import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParsingException;
 
-abstract class AbstractYamlParser<E, M> implements JsonParser, JsonLocation {
+abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
 
     enum NumberType {
         INTEGER,
@@ -56,7 +56,7 @@ abstract class AbstractYamlParser<E, M> implements JsonParser, JsonLocation {
         }
     }
 
-    private static final Logger LOGGER = Logger.getLogger(AbstractYamlParser.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(YamlParser.class.getName());
 
     static final String MSG_EXCEPTION = "Exception reading the YAML stream as JSON";
     static final String MSG_UNEXPECTED = "Unexpected event reached parsing YAML: ";
@@ -92,7 +92,7 @@ abstract class AbstractYamlParser<E, M> implements JsonParser, JsonLocation {
     final Boolean[] valueIsKey = new Boolean[200];
     int depth = -1;
 
-    AbstractYamlParser(Iterator<E> yamlEvents, Reader yamlReader) {
+    YamlParser(Iterator<E> yamlEvents, Reader yamlReader) {
         this.yamlEvents = yamlEvents;
         this.yamlSource = yamlReader;
     }

@@ -18,7 +18,7 @@ package io.xlate.yamljson;
 import java.io.Reader;
 import java.util.Iterator;
 
-final class SnakeYamlEngineParser extends AbstractYamlParser<org.snakeyaml.engine.v2.events.Event, org.snakeyaml.engine.v2.exceptions.Mark> {
+final class SnakeYamlEngineParser extends YamlParser<org.snakeyaml.engine.v2.events.Event, org.snakeyaml.engine.v2.exceptions.Mark> {
 
     SnakeYamlEngineParser(Iterator<org.snakeyaml.engine.v2.events.Event> yamlEvents, Reader yamlReader) {
         super(yamlEvents, yamlReader);

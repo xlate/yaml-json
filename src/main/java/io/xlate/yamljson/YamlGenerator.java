@@ -32,7 +32,7 @@ import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonGenerationException;
 import jakarta.json.stream.JsonGenerator;
 
-abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
+abstract class YamlGenerator<E, S> implements JsonGenerator {
 
     enum EventType {
         STREAM_START,
@@ -66,7 +66,7 @@ abstract class AbstractYamlGenerator<E, S> implements JsonGenerator {
     final boolean explicitEnd;
     final Deque<ContextType> context = new ArrayDeque<>();
 
-    AbstractYamlGenerator(Map<EventType, E> eventTypes, Map<StyleType, S> styleTypes, Writer writer, boolean explicitStart, boolean explicitEnd) {
+    YamlGenerator(Map<EventType, E> eventTypes, Map<StyleType, S> styleTypes, Writer writer, boolean explicitStart, boolean explicitEnd) {
         this.eventTypes = eventTypes;
         this.styleTypes = styleTypes;
         this.writer = writer;

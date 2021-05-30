@@ -86,9 +86,9 @@ class YamlParserTest {
                 assertEquals(Event.VALUE_NUMBER, event);
 
                 // It's a number
-                assertFalse(((AbstractYamlParser<?, ?>) parser).isNaN());
+                assertFalse(((YamlParser<?, ?>) parser).isNaN());
                 // It's not infinite
-                assertFalse(((AbstractYamlParser<?, ?>) parser).isInfinite());
+                assertFalse(((YamlParser<?, ?>) parser).isInfinite());
 
                 assertEquals(integral, parser.isIntegralNumber());
 
@@ -112,7 +112,7 @@ class YamlParserTest {
             try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
                 Event event = seekEvent(parser, nextCalls);
                 assertEquals(Event.VALUE_STRING, event);
-                assertTrue(((AbstractYamlParser<?, ?>) parser).isInfinite());
+                assertTrue(((YamlParser<?, ?>) parser).isInfinite());
                 String actual = parser.getString();
                 assertEquals(expected, actual);
             }
@@ -128,8 +128,8 @@ class YamlParserTest {
             try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
                 Event event = seekEvent(parser, nextCalls);
                 assertEquals(Event.VALUE_STRING, event);
-                assertFalse(((AbstractYamlParser<?, ?>) parser).isInfinite());
-                assertTrue(((AbstractYamlParser<?, ?>) parser).isNaN());
+                assertFalse(((YamlParser<?, ?>) parser).isInfinite());
+                assertTrue(((YamlParser<?, ?>) parser).isNaN());
                 String actual = parser.getString();
                 assertEquals(expected, actual);
             }
@@ -222,7 +222,7 @@ class YamlParserTest {
     void testInfinityCheckOnKeyThrowsException(String version) {
         InputStream source = new ByteArrayInputStream(String.format("---%nkey: value%n").getBytes());
 
-        try (AbstractYamlParser<?, ?> parser = (AbstractYamlParser<?, ?>) createParser(version, source)) {
+        try (YamlParser<?, ?> parser = (YamlParser<?, ?>) createParser(version, source)) {
             parser.next();
             parser.next();
             assertThrows(IllegalStateException.class, () -> parser.isInfinite());

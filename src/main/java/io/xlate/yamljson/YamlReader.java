@@ -34,10 +34,10 @@ import jakarta.json.stream.JsonParser.Event;
 class YamlReader implements JsonReader {
 
     final JsonProvider jsonProvider = JsonProvider.provider();
-    final AbstractYamlParser<?, ?> parser;
+    final YamlParser<?, ?> parser;
     boolean readable = true;
 
-    YamlReader(AbstractYamlParser<?, ?> parser) {
+    YamlReader(YamlParser<?, ?> parser) {
         this.parser = parser;
     }
 
