@@ -70,19 +70,30 @@ import jakarta.json.stream.JsonParserFactory;
 public final class Yaml {
 
     /**
+     * Constants of supported YAML versions
+     */
+    public static final class Versions {
+        public static final String V1_1 = "v1.1";
+        public static final String V1_2 = "v1.2";
+
+        private Versions() {
+        }
+
+        public static Set<String> supportedVersions() {
+            return Set.of(V1_1, V1_2);
+        }
+
+    }
+
+    /**
      * Constants of supported property keys.
      */
     public static final class Settings {
-        public static final String YAML_VERSION = "io.xlate.yamljson.YAML_VERSION";
-        public static final String YAML_VERSION_1_1 = "v1.1";
-        public static final String YAML_VERSION_1_2 = "v1.2";
 
         private Settings() {
         }
 
-        public static Set<String> supportedVersions() {
-            return Set.of(YAML_VERSION_1_1, YAML_VERSION_1_2);
-        }
+        public static final String YAML_VERSION = "io.xlate.yamljson.YAML_VERSION";
 
         /**
          * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitStart(boolean)

@@ -2,6 +2,7 @@ package io.xlate.yamljson;
 
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.DumpSettingsBuilder;
@@ -10,6 +11,20 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 
 interface SettingsBuilder {
+
+    static final String MOD_SNAKEYAML = "org.yaml.snakeyaml";
+    static final String MOD_SNAKEYAML_ENGINE = "org.snakeyaml.engine";
+    static final String MISSING_MODULE_MESSAGE = "Required module not found: %s. "
+            + "Ensure module is present on module path. Add to application module-info or "
+            + "include with --add-modules command line option.";
+
+    default Object loadProvider(Supplier<Object> providerSupplier, String providerModule) {
+        try {
+            return providerSupplier.get();
+        } catch (Exception | NoClassDefFoundError e) {
+            throw new IllegalStateException(String.format(MISSING_MODULE_MESSAGE, providerModule), e);
+        }
+    }
 
     default LoaderOptions buildLoaderOptions(Map<String, ?> properties) {
         // No load properties supported currently

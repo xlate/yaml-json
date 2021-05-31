@@ -53,9 +53,9 @@ public final class YamlProvider extends JsonProvider {
 
         try {
             Class.forName("org.snakeyaml.engine.v2.api.lowlevel.Parse");
-            defaultVersion = Yaml.Settings.YAML_VERSION_1_2;
+            defaultVersion = Yaml.Versions.V1_2;
         } catch (Exception | NoClassDefFoundError e) {
-            defaultVersion = Yaml.Settings.YAML_VERSION_1_1;
+            defaultVersion = Yaml.Versions.V1_1;
         }
 
         var defaultProperties = Map.of(Yaml.Settings.YAML_VERSION, defaultVersion);

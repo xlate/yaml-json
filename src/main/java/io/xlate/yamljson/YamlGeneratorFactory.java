@@ -35,23 +35,28 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
 
     YamlGeneratorFactory(Map<String, ?> properties) {
         this.properties = properties;
+
         Object version = properties.get(Yaml.Settings.YAML_VERSION);
-        this.useSnakeYamlEngine = Yaml.Settings.YAML_VERSION_1_2.equals(version);
+        useSnakeYamlEngine = Yaml.Versions.V1_2.equals(version);
 
         if (useSnakeYamlEngine) {
-            this.snakeYamlSettings = buildDumpSettings(properties);
+            snakeYamlSettings = loadProvider(() -> buildDumpSettings(properties), MOD_SNAKEYAML_ENGINE);
         } else {
-            this.snakeYamlSettings = buildDumperOptions(properties);
+            snakeYamlSettings = loadProvider(() -> buildDumperOptions(properties), MOD_SNAKEYAML);
         }
     }
 
     @Override
     public JsonGenerator createGenerator(Writer writer) {
         Objects.requireNonNull(writer, "writer");
+
         if (useSnakeYamlEngine) {
-            return new SnakeYamlEngineGenerator((org.snakeyaml.engine.v2.api.DumpSettings) this.snakeYamlSettings, writer);
+            var settings = (org.snakeyaml.engine.v2.api.DumpSettings) this.snakeYamlSettings;
+            return new SnakeYamlEngineGenerator(settings, writer);
         }
-        return new SnakeYamlGenerator((org.yaml.snakeyaml.DumperOptions) this.snakeYamlSettings, writer);
+
+        var settings = (org.yaml.snakeyaml.DumperOptions) this.snakeYamlSettings;
+        return new SnakeYamlGenerator(settings, writer);
     }
 
     @Override

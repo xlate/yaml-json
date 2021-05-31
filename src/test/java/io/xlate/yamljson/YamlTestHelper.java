@@ -38,7 +38,7 @@ final class YamlTestHelper {
 
     static Set<String> getTestVersions() {
         return Set.of(System.getProperty(Yaml.Settings.YAML_VERSION,
-                                         Yaml.Settings.supportedVersions().stream().collect(Collectors.joining(",")))
+                                         Yaml.Versions.supportedVersions().stream().collect(Collectors.joining(",")))
                             .split(","));
     }
 

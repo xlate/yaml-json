@@ -224,6 +224,7 @@ class YamlGeneratorTest {
                 .write("key with spaces", "ends with colon:")
                 .write("key\twith\ttabs", "ends with hash #")
                 .write("hash# in the middle", "#hash at the start of the value")
+                .write("hash\t# with tab", "value with hash (#) preceded by tab\t#")
                 .writeEnd();
 
             writer.flush();
@@ -234,7 +235,8 @@ class YamlGeneratorTest {
                 + "'#anotherwithhash': value with:colon but the :is not followed by a space\n"
                 + "key with spaces: 'ends with colon:'\n"
                 + "\"key\\twith\\ttabs\": 'ends with hash #'\n"
-                + "hash# in the middle: '#hash at the start of the value'\n",
+                + "hash# in the middle: '#hash at the start of the value'\n"
+                + "\"hash\\t# with tab\": \"value with hash (#) preceded by tab\\t#\"\n",
                 writer.toString());
     }
 }
