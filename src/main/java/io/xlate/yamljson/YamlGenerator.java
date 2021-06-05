@@ -289,10 +289,6 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         Objects.requireNonNull(value, VALUE);
 
         switch (value.getValueType()) {
-        case NULL:
-            emitScalar((Object) null);
-            break;
-
         case TRUE:
             emitScalar(Boolean.TRUE);
             break;
@@ -323,6 +319,11 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
                 write(entry.getKey(), entry.getValue());
             }
             writeEnd();
+            break;
+
+        case NULL:
+        default:
+            emitScalar((Object) null);
             break;
         }
 

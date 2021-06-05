@@ -31,9 +31,13 @@ class YamlReaderFactory implements JsonReaderFactory, SettingsBuilder {
     private final Map<String, ?> properties;
     private final YamlParserFactory parserFactory;
 
-    YamlReaderFactory(Map<String, ?> properties) {
+    YamlReaderFactory(Map<String, ?> properties, YamlParserFactory parserFactory) {
         this.properties = properties;
-        this.parserFactory = new YamlParserFactory(properties);
+        this.parserFactory = parserFactory;
+    }
+
+    YamlReaderFactory(Map<String, ?> properties) {
+        this(properties, new YamlParserFactory(properties));
     }
 
     private YamlReader createYamlReader(Reader reader) {

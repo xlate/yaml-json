@@ -52,19 +52,39 @@ final class YamlTestHelper {
         }
     }
 
+    static boolean isOnlySupportedVersion(String version) {
+        return Yaml.Versions.supportedVersions().size() == 1 && Yaml.Versions.supportedVersions().contains(version);
+    }
+
     static JsonReader createReader(String version, Reader reader) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createReader(reader);
+        }
+
         return Yaml.createReaderFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createReader(reader);
     }
 
     static JsonReader createReader(String version, InputStream stream) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createReader(stream);
+        }
+
         return createReader(version, new InputStreamReader(stream));
     }
 
     static JsonWriter createWriter(String version, Writer writer) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createWriter(writer);
+        }
+
         return Yaml.createWriterFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createWriter(writer);
     }
 
     static JsonWriter createWriter(String version, OutputStream stream) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createWriter(stream);
+        }
+
         return createWriter(version, new OutputStreamWriter(stream));
     }
 }

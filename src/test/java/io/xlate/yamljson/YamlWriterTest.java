@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.StringWriter;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -35,6 +36,7 @@ import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonWriter;
 
+@DisabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
 class YamlWriterTest {
 
     @BeforeEach

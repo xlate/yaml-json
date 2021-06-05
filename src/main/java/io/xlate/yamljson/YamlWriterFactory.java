@@ -32,9 +32,13 @@ class YamlWriterFactory implements JsonWriterFactory, SettingsBuilder {
     private final Map<String, ?> properties;
     private final YamlGeneratorFactory generatorFactory;
 
-    YamlWriterFactory(Map<String, ?> properties) {
+    YamlWriterFactory(Map<String, ?> properties, YamlGeneratorFactory generatorFactory) {
         this.properties = properties;
-        this.generatorFactory = new YamlGeneratorFactory(properties);
+        this.generatorFactory = generatorFactory;
+    }
+
+    YamlWriterFactory(Map<String, ?> properties) {
+        this(properties, new YamlGeneratorFactory(properties));
     }
 
     @Override

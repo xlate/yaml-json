@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonBuilderFactory;
@@ -41,29 +42,31 @@ import jakarta.json.stream.JsonParserFactory;
  * objects. This provider will NOT be made available via the service loader
  * mechanism to avoid conflicts with other JSON providers available.
  */
-public final class YamlProvider extends JsonProvider {
+final class YamlProvider extends JsonProvider {
 
-    private final JsonParserFactory defaultParserFactory;
-    private final JsonReaderFactory defaultReaderFactory;
-    private final JsonGeneratorFactory defaultGeneratorFactory;
-    private final JsonWriterFactory defaultWriterFactory;
+    private final YamlParserFactory defaultParserFactory;
+    private final YamlReaderFactory defaultReaderFactory;
+    private final YamlGeneratorFactory defaultGeneratorFactory;
+    private final YamlWriterFactory defaultWriterFactory;
 
     public YamlProvider() {
+        Set<String> supportedVersions = Yaml.Versions.supportedVersions();
         String defaultVersion;
 
-        try {
-            Class.forName("org.snakeyaml.engine.v2.api.lowlevel.Parse");
+        if (supportedVersions.isEmpty()) {
+            throw new IllegalStateException("No YAML providers found on class/module path!");
+        } else if (supportedVersions.contains(Yaml.Versions.V1_2)) {
             defaultVersion = Yaml.Versions.V1_2;
-        } catch (Exception | NoClassDefFoundError e) {
+        } else {
             defaultVersion = Yaml.Versions.V1_1;
         }
 
         var defaultProperties = Map.of(Yaml.Settings.YAML_VERSION, defaultVersion);
 
         defaultParserFactory = new YamlParserFactory(defaultProperties);
-        defaultReaderFactory = new YamlReaderFactory(defaultProperties);
+        defaultReaderFactory = new YamlReaderFactory(defaultProperties, defaultParserFactory);
         defaultGeneratorFactory = new YamlGeneratorFactory(defaultProperties);
-        defaultWriterFactory = new YamlWriterFactory(defaultProperties);
+        defaultWriterFactory = new YamlWriterFactory(defaultProperties, defaultGeneratorFactory);
     }
 
     @Override

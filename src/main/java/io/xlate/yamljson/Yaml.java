@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -75,12 +77,33 @@ public final class Yaml {
     public static final class Versions {
         public static final String V1_1 = "v1.1";
         public static final String V1_2 = "v1.2";
+        static final Set<String> VERSIONS_PRESENT;
+
+        private interface ClassSupplier {
+            Class<?> get() throws LinkageError, ClassNotFoundException;
+        }
+
+        static {
+            Set<String> versions = new HashSet<>(2);
+            addIfPresent(versions, V1_1, () -> Class.forName(SettingsBuilder.MARKER_SNAKEYAML));
+            addIfPresent(versions, V1_2, () -> Class.forName(SettingsBuilder.MARKER_SNAKEYAML_ENGINE));
+            VERSIONS_PRESENT = Collections.unmodifiableSet(versions);
+        }
 
         private Versions() {
         }
 
-        public static Set<String> supportedVersions() {
-            return Set.of(V1_1, V1_2);
+        private static void addIfPresent(Set<String> versions, String version, ClassSupplier loader) {
+            try {
+                loader.get();
+                versions.add(version);
+            } catch (ClassNotFoundException | LinkageError e) {
+                // Ignored
+            }
+        }
+
+        static Set<String> supportedVersions() {
+            return VERSIONS_PRESENT;
         }
 
     }

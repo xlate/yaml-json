@@ -13,7 +13,11 @@ import org.yaml.snakeyaml.LoaderOptions;
 interface SettingsBuilder {
 
     static final String MOD_SNAKEYAML = "org.yaml.snakeyaml";
+    static final String MARKER_SNAKEYAML = "org.yaml.snakeyaml.Yaml";
+
     static final String MOD_SNAKEYAML_ENGINE = "org.snakeyaml.engine";
+    static final String MARKER_SNAKEYAML_ENGINE = "org.snakeyaml.engine.v2.api.lowlevel.Parse";
+
     static final String MISSING_MODULE_MESSAGE = "Required module not found: %s. "
             + "Ensure module is present on module path. Add to application module-info or "
             + "include with --add-modules command line option.";

@@ -171,6 +171,22 @@
               <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED --add-modules=org.snakeyaml.engine.v2 ${argLine}</argLine>
             </configuration>
           </execution>
+          <execution>
+            <id>yaml-missing</id>
+            <goals>
+              <goal>test</goal>
+            </goals>
+            <configuration>
+              <systemPropertyVariables>
+                <io.xlate.yamljson.YAML_VERSION>NONE</io.xlate.yamljson.YAML_VERSION>
+              </systemPropertyVariables>
+              <classpathDependencyExcludes>
+                <classpathDependencyExclude>org.yaml:snakeyaml</classpathDependencyExclude>
+                <classpathDependencyExclude>org.snakeyaml:snakeyaml-engine</classpathDependencyExclude>
+              </classpathDependencyExcludes>
+              <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED ${argLine}</argLine>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
