@@ -16,7 +16,6 @@
 package io.xlate.yamljson;
 
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +55,7 @@ class YamlWriterFactory implements JsonWriterFactory, SettingsBuilder {
     public JsonWriter createWriter(OutputStream out, Charset charset) {
         Objects.requireNonNull(out, "out");
         Objects.requireNonNull(charset, "charset");
-        return createWriter(new OutputStreamWriter(out, charset));
+        return new YamlWriter(generatorFactory.createGenerator(out, charset));
     }
 
     @Override

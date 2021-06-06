@@ -48,17 +48,16 @@ final class YamlProvider extends JsonProvider {
     private final YamlReaderFactory defaultReaderFactory;
     private final YamlGeneratorFactory defaultGeneratorFactory;
     private final YamlWriterFactory defaultWriterFactory;
+    final String defaultVersion;
 
     public YamlProvider() {
         Set<String> supportedVersions = Yaml.Versions.supportedVersions();
-        String defaultVersion;
 
         if (supportedVersions.isEmpty()) {
             throw new IllegalStateException("No YAML providers found on class/module path!");
-        } else if (supportedVersions.contains(Yaml.Versions.V1_2)) {
-            defaultVersion = Yaml.Versions.V1_2;
         } else {
-            defaultVersion = Yaml.Versions.V1_1;
+            // v1.1 if available, otherwise v1.2
+            defaultVersion = supportedVersions.iterator().next();
         }
 
         var defaultProperties = Map.of(Yaml.Settings.YAML_VERSION, defaultVersion);

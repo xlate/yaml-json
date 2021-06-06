@@ -53,7 +53,7 @@ class YamlReaderFactory implements JsonReaderFactory, SettingsBuilder {
     @Override
     public JsonReader createReader(InputStream in) {
         Objects.requireNonNull(in, "in");
-        return createYamlReader(new InputStreamReader(in));
+        return new YamlReader(parserFactory.createYamlParser(in));
     }
 
     @Override

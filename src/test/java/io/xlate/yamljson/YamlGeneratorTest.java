@@ -16,14 +16,12 @@
 package io.xlate.yamljson;
 
 import static io.xlate.yamljson.YamlTestHelper.VERSIONS_SOURCE;
+import static io.xlate.yamljson.YamlTestHelper.createGenerator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringWriter;
-import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
@@ -38,14 +36,6 @@ import jakarta.json.stream.JsonGeneratorFactory;
 
 @DisabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
 class YamlGeneratorTest {
-
-    JsonGenerator createGenerator(String version, Writer writer) {
-        return Yaml.createGeneratorFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createGenerator(writer);
-    }
-
-    JsonGenerator createGenerator(String version, OutputStream stream) {
-        return createGenerator(version, new OutputStreamWriter(stream));
-    }
 
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)

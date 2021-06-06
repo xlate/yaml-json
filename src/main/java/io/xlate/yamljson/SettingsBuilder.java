@@ -22,7 +22,7 @@ interface SettingsBuilder {
             + "Ensure module is present on module path. Add to application module-info or "
             + "include with --add-modules command line option.";
 
-    default Object loadProvider(Supplier<Object> providerSupplier, String providerModule) {
+    default <T> T loadProvider(Supplier<T> providerSupplier, String providerModule) {
         try {
             return providerSupplier.get();
         } catch (Exception | NoClassDefFoundError e) {

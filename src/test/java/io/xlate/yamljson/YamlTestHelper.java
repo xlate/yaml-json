@@ -16,17 +16,17 @@
 package io.xlate.yamljson;
 
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import jakarta.json.JsonReader;
 import jakarta.json.JsonWriter;
+import jakarta.json.stream.JsonGenerator;
+import jakarta.json.stream.JsonParser;
 
 final class YamlTestHelper {
 
@@ -37,9 +37,17 @@ final class YamlTestHelper {
     }
 
     static Set<String> getTestVersions() {
-        return Set.of(System.getProperty(Yaml.Settings.YAML_VERSION,
-                                         Yaml.Versions.supportedVersions().stream().collect(Collectors.joining(",")))
-                            .split(","));
+        String testVersions = System.getProperty(Yaml.Settings.YAML_VERSION);
+
+        if (testVersions == null || testVersions.isBlank()) {
+            return Yaml.Versions.supportedVersions();
+        }
+
+        if ("NONE".equals(testVersions)) {
+            return Collections.emptySet();
+        }
+
+        return Set.of(testVersions.split(","));
     }
 
     static void testEachVersion(ThrowingConsumer<String> testCase) {
@@ -56,6 +64,26 @@ final class YamlTestHelper {
         return Yaml.Versions.supportedVersions().size() == 1 && Yaml.Versions.supportedVersions().contains(version);
     }
 
+    //////////
+
+    static JsonParser createParser(String version, Reader reader) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createParser(reader);
+        }
+
+        return Yaml.createParserFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createParser(reader);
+    }
+
+    static JsonParser createParser(String version, InputStream stream) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createParser(stream);
+        }
+
+        return Yaml.createParserFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createParser(stream);
+    }
+
+    //////////
+
     static JsonReader createReader(String version, Reader reader) {
         if (isOnlySupportedVersion(version)) {
             return Yaml.createReader(reader);
@@ -69,8 +97,28 @@ final class YamlTestHelper {
             return Yaml.createReader(stream);
         }
 
-        return createReader(version, new InputStreamReader(stream));
+        return Yaml.createReaderFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createReader(stream);
     }
+
+    //////////
+
+    static JsonGenerator createGenerator(String version, Writer writer) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createGenerator(writer);
+        }
+
+        return Yaml.createGeneratorFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createGenerator(writer);
+    }
+
+    static JsonGenerator createGenerator(String version, OutputStream stream) {
+        if (isOnlySupportedVersion(version)) {
+            return Yaml.createGenerator(stream);
+        }
+
+        return Yaml.createGeneratorFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createGenerator(stream);
+    }
+
+    //////////
 
     static JsonWriter createWriter(String version, Writer writer) {
         if (isOnlySupportedVersion(version)) {
@@ -85,6 +133,6 @@ final class YamlTestHelper {
             return Yaml.createWriter(stream);
         }
 
-        return createWriter(version, new OutputStreamWriter(stream));
+        return Yaml.createWriterFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createWriter(stream);
     }
 }

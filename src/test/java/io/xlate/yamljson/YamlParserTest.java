@@ -16,6 +16,7 @@
 package io.xlate.yamljson;
 
 import static io.xlate.yamljson.YamlTestHelper.VERSIONS_SOURCE;
+import static io.xlate.yamljson.YamlTestHelper.createParser;
 import static io.xlate.yamljson.YamlTestHelper.testEachVersion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,11 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
-import java.util.Map;
 
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -46,14 +45,6 @@ import jakarta.json.stream.JsonParsingException;
 
 @DisabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
 class YamlParserTest {
-
-    JsonParser createParser(String version, Reader reader) {
-        return Yaml.createParserFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createParser(reader);
-    }
-
-    JsonParser createParser(String version, InputStream stream) {
-        return createParser(version, new InputStreamReader(stream));
-    }
 
     Event seekEvent(JsonParser parser, int nextCalls) {
         Event event = null;

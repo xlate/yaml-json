@@ -22,7 +22,7 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -84,7 +84,7 @@ public final class Yaml {
         }
 
         static {
-            Set<String> versions = new HashSet<>(2);
+            Set<String> versions = new LinkedHashSet<>(2);
             addIfPresent(versions, V1_1, () -> Class.forName(SettingsBuilder.MARKER_SNAKEYAML));
             addIfPresent(versions, V1_2, () -> Class.forName(SettingsBuilder.MARKER_SNAKEYAML_ENGINE));
             VERSIONS_PRESENT = Collections.unmodifiableSet(versions);
