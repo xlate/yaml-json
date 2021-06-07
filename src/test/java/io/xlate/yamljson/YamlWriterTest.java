@@ -22,8 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -65,14 +67,14 @@ class YamlWriterTest {
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
     void testScalarStyles(String version) {
-        StringWriter sink = new StringWriter();
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
-        try (JsonWriter writer = createWriter(version, sink)) {
+        try (JsonWriter writer = createWriter(version, stream)) {
             JsonArray value = Json.createArrayBuilder().add("#http://example.com").build();
             writer.writeArray(value);
             assertThrows(IllegalStateException.class, () -> writer.write(value));
         }
 
-        assertEquals("- '#http://example.com'\n", sink.toString());
+        assertEquals("- '#http://example.com'\n", new String(stream.toByteArray(), StandardCharsets.UTF_8));
     }
 }

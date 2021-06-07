@@ -12,7 +12,7 @@ import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class YamlTest {
+class YamlProviderTest {
 
     @Test
     @EnabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
