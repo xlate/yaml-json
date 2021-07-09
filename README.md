@@ -46,7 +46,7 @@ Pick one of the two listed by choosing a dependency.
   ```
 
 ## Supported YAML Services
-Placing one of the two support YAML libraries on the class/module path will enable that library within `yaml-json`. Note, when using JPMS modules, you must also add the module via the `java` command.
+Placing one of the two supported YAML libraries on the class/module path will enable that library within `yaml-json`. Note, when using JPMS modules, you must also add the module via the `java` command.
 
 If *both* libraries are present in your application, you can specify which to use by creating one of the factories in the `io.xlate.yamljson.Yaml` class and passing a configuration property with key `io.xlate.yamljson.Yaml.Settings.YAML_VERSION` and one of the values `io.xlate.yamljson.Yaml.Versions.V1_1` or `io.xlate.yamljson.Yaml.Versions.V1_2`. Note, the values specified here are the names of constants, NOT the values themselves.
 
