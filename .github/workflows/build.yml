@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [11, 15]
+        java: [ 11, 16 ]
     name: Build with JDK ${{matrix.java}}
 
     steps:
@@ -41,7 +41,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Maven build
-        run: mvn -B verify package --file pom.xml
+        run: mvn -B -Plegacy verify package --file pom.xml
 
   quality:
     if: github.repository == 'xlate/yaml-json'
