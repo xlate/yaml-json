@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.xlate</groupId>
   <artifactId>yaml-json</artifactId>
-  <version>0.0.6-SNAPSHOT</version>
+  <version>0.0.6</version>
 
   <name>yaml-json : JSON API for YAML</name>
   <description>Read and write YAML in Java using the Jakarta JSON API</description>
@@ -19,7 +18,7 @@
     <url>https://github.com/xlate/yaml-json</url>
     <connection>scm:git:https://github.com/xlate/yaml-json.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/xlate/yaml-json.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.0.6</tag>
   </scm>
 
   <licenses>
@@ -334,21 +333,21 @@
                 </goals>
                 <configuration>
                   <target>
-                    <mkdir dir="${legacy.sourceDirectory}"/>
+                    <mkdir dir="${legacy.sourceDirectory}" />
 
                     <copy todir="${legacy.sourceDirectory}">
-                      <fileset dir="src/main/java"/>
+                      <fileset dir="src/main/java" />
                     </copy>
 
                     <replace token="jakarta.json." value="javax.json." dir="${legacy.sourceDirectory}">
-                      <include name="**/*.java"/>
+                      <include name="**/*.java" />
                     </replace>
 
                     <replace token="jakarta.json" value="java.json" dir="${legacy.sourceDirectory}">
-                      <include name="**/module-info.java"/>
+                      <include name="**/module-info.java" />
                     </replace>
 
-                    <mkdir dir="${legacy.outputDirectory}"/>
+                    <mkdir dir="${legacy.outputDirectory}" />
                   </target>
                 </configuration>
               </execution>
@@ -360,10 +359,8 @@
                 </goals>
                 <configuration>
                   <target>
-                    <mkdir dir="${legacy.outputDirectory}"/>
-                    <javac srcdir="${legacy.sourceDirectory}" destdir="${legacy.outputDirectory}"
-                      modulepath="${javax.json:javax.json-api:jar}:${org.yaml:snakeyaml:jar}:${org.snakeyaml:snakeyaml-engine:jar}"
-                      includeantruntime="build.sysclasspath=last"/>
+                    <mkdir dir="${legacy.outputDirectory}" />
+                    <javac srcdir="${legacy.sourceDirectory}" destdir="${legacy.outputDirectory}" modulepath="${javax.json:javax.json-api:jar}:${org.yaml:snakeyaml:jar}:${org.snakeyaml:snakeyaml-engine:jar}" includeantruntime="build.sysclasspath=last" />
                   </target>
                 </configuration>
               </execution>
