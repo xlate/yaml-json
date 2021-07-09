@@ -41,7 +41,7 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Maven build
-        run: mvn -B -Plegacy verify package --file pom.xml
+        run: mvn -B -Plegacy verify --file pom.xml
 
   quality:
     if: github.repository == 'xlate/yaml-json'

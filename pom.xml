@@ -362,7 +362,8 @@
                   <target>
                     <mkdir dir="${legacy.outputDirectory}"/>
                     <javac srcdir="${legacy.sourceDirectory}" destdir="${legacy.outputDirectory}"
-                      modulepath="${javax.json:javax.json-api:jar}:${org.yaml:snakeyaml:jar}:${org.snakeyaml:snakeyaml-engine:jar}"/>
+                      modulepath="${javax.json:javax.json-api:jar}:${org.yaml:snakeyaml:jar}:${org.snakeyaml:snakeyaml-engine:jar}"
+                      includeantruntime="build.sysclasspath=last"/>
                   </target>
                 </configuration>
               </execution>
