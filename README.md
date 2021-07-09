@@ -16,8 +16,9 @@ try (JsonParser parser = Yaml.createParser(reader)) {
 # Versions
 This library is built for multiple combinations of JSON API and Yaml versions.
 
-## Supported JSON API dependencies (pick one):
-1. Jakarta JSON (module `jakarta.json`):
+## Supported JSON API Dependencies
+Pick one of the two listed by choosing a dependency.
+### Jakarta JSON (module `jakarta.json`):
   ```xml
   <dependency>
     <groupId>io.xlate</groupId>
@@ -25,7 +26,7 @@ This library is built for multiple combinations of JSON API and Yaml versions.
     <version>${version.yaml-json.current}</version>
   </dependency>
   ```
-1. Legacy Java EE JSON (module `java.json`):
+### Legacy Java EE JSON (module `java.json`):
   ```xml
   <dependency>
     <groupId>io.xlate</groupId>
@@ -35,12 +36,12 @@ This library is built for multiple combinations of JSON API and Yaml versions.
   </dependency>
   ```
 
-## Supported YAML Versions
-Placing one of the two support YAML libraries on the class/module path will enable
-that library within `yaml-json`. Note, when using JPMS modules, you must also add
-the module via the `java` command.
+## Supported YAML Services
+Placing one of the two support YAML libraries on the class/module path will enable that library within `yaml-json`. Note, when using JPMS modules, you must also add the module via the `java` command.
 
-1. SnakeYaml (YAML 1.1):
+If *both* libraries are present in your application, you can specify which to use by creating one of the factories in the `io.xlate.yamljson.Yaml` class and passing a configuration property with key `io.xlate.yamljson.Yaml.Settings.YAML_VERSION` and one of the values `io.xlate.yamljson.Yaml.Versions.V1_1` or `io.xlate.yamljson.Yaml.Versions.V1_2`. Note, the values specified here are the names of constants, NOT the values themselves.
+
+### SnakeYaml (YAML 1.1):
   ```xml
   <dependency>
     <groupId>org.yaml</groupId>
@@ -50,7 +51,7 @@ the module via the `java` command.
   ```
   Add to `java` command: `--add-modules=org.yaml.snakeyaml`
 
-1. SnakeYaml Engine (YAML 1.2):
+### SnakeYaml Engine (YAML 1.2):
   ```xml
   <dependency>
     <groupId>org.snakeyaml</groupId>
