@@ -33,12 +33,12 @@ class YamlWriter implements JsonWriter {
 
     @Override
     public void writeArray(JsonArray array) {
-        write((JsonStructure) array);
+        write(array);
     }
 
     @Override
     public void writeObject(JsonObject object) {
-        write((JsonStructure) object);
+        write(object);
     }
 
     @Override
