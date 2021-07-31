@@ -59,7 +59,7 @@
     <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S6212</sonar.issue.ignore.multicriteria.e1.ruleKey>
     <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
 
-    <version.jakarta.json-api>2.0.0</version.jakarta.json-api>
+    <version.jakarta.json-api>2.0.1</version.jakarta.json-api>
     <version.javax.json-api>1.1.4</version.javax.json-api>
     <version.snakeyaml>1.28</version.snakeyaml>
     <version.snakeyaml-engine>2.3</version.snakeyaml-engine>
