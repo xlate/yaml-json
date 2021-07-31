@@ -44,7 +44,7 @@ jobs:
         run: mvn -B -Plegacy verify --file pom.xml
 
   quality:
-    if: github.repository == 'xlate/yaml-json'
+    if: {{ github.repository == 'xlate/yaml-json' && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     name: Verify Quality
 
