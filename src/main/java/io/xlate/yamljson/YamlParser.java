@@ -163,10 +163,11 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
 
         if (alias != null) {
             if (anchoredEvents.containsKey(alias)) {
+                Event jsonEventOverride = currentEvent != Event.VALUE_NULL ? currentEvent : null;
                 List<AnchoredEvent<E>> events = anchoredEvents.get(alias);
                 ListIterator<AnchoredEvent<E>> iterator = events.listIterator(events.size());
                 while (iterator.hasPrevious()) {
-                    enqueue(iterator.previous());
+                    enqueue(iterator.previous(), jsonEventOverride);
                 }
                 advanceEvent();
             } else {
@@ -230,21 +231,6 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         return parsed;
     }
 
-    void enqueue(E yamlEvent, Boolean aliasExpansion, Event jsonEvent, NumberType numberType, String value, BigDecimal numberValue) {
-        yamlEventQueue.addLast(yamlEvent);
-        aliasExpansionQueue.addLast(aliasExpansion);
-        jsonEventQueue.addLast(jsonEvent);
-        numberTypeQueue.addLast(numberType);
-        valueQueue.addLast(value != null ? value : "");
-
-        if (jsonEvent == Event.VALUE_NUMBER) {
-            numberValue = Objects.requireNonNullElseGet(numberValue, () -> parseNumber(numberType, value));
-            numberQueue.addLast(Objects.requireNonNullElse(numberValue, UNSET_NUMBER));
-        } else {
-            numberQueue.addLast(UNSET_NUMBER);
-        }
-    }
-
     void enqueueFirst(E yamlEvent, Boolean aliasExpansion, Event jsonEvent, NumberType numberType, String value, BigDecimal numberValue) {
         yamlEventQueue.addFirst(yamlEvent);
         aliasExpansionQueue.addFirst(aliasExpansion);
@@ -260,18 +246,30 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         }
     }
 
-    void enqueue(E yamlEvent, Event jsonEvent, NumberType numberType, String value, BigDecimal numberValue) {
-        enqueue(yamlEvent, Boolean.FALSE, jsonEvent, numberType, value, numberValue);
-    }
-
-    void enqueue(AnchoredEvent<E> anchor) {
+    void enqueue(AnchoredEvent<E> anchor, Event jsonEventOverride) {
         String alias = getAlias(anchor.yamlEvent);
 
         if (alias != null) {
             enqueueFirst(anchor.yamlEvent, Boolean.TRUE, Event.VALUE_NULL, NumberType.NONE, "", UNSET_NUMBER);
         } else {
             AnchoredDataEvent<E> dataEvent = (AnchoredDataEvent<E>) anchor;
-            enqueueFirst(anchor.yamlEvent, Boolean.TRUE, dataEvent.jsonEvent, dataEvent.numberType, dataEvent.value, dataEvent.numberValue);
+            Event jsonEvent = Objects.requireNonNullElse(jsonEventOverride, dataEvent.jsonEvent);
+            enqueueFirst(anchor.yamlEvent, Boolean.TRUE, jsonEvent, dataEvent.numberType, dataEvent.value, dataEvent.numberValue);
+        }
+    }
+
+    void enqueue(E yamlEvent, Event jsonEvent, NumberType numberType, String value, BigDecimal numberValue) {
+        yamlEventQueue.addLast(yamlEvent);
+        aliasExpansionQueue.addLast(Boolean.FALSE);
+        jsonEventQueue.addLast(jsonEvent);
+        numberTypeQueue.addLast(numberType);
+        valueQueue.addLast(value);
+
+        if (jsonEvent == Event.VALUE_NUMBER) {
+            numberValue = Objects.requireNonNullElseGet(numberValue, () -> parseNumber(numberType, value));
+            numberQueue.addLast(Objects.requireNonNullElse(numberValue, UNSET_NUMBER));
+        } else {
+            numberQueue.addLast(UNSET_NUMBER);
         }
     }
 
@@ -412,7 +410,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
                 List<AnchoredEvent<E>> anchored = anchoredEvents.get(alias);
 
                 if (anchored.size() != 1) {
-                    throw new IllegalStateException("Expected key but found alias of non-string anchor");
+                    throw new IllegalStateException("Expected key but found alias of non-scalar anchor");
                 }
 
                 AnchoredEvent<E> anchor = anchored.get(0);
@@ -421,8 +419,8 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
                     throw new IllegalStateException("Expected key but found alias of non-scalar anchor");
                 }
 
-                // TODO: Do not de-reference the alias here?
-                enqueueString(anchor.yamlEvent, Event.KEY_NAME, getValue(anchor.yamlEvent));
+                // Enqueue the alias event, specifying that the JSON event is KEY_NAME
+                enqueue(yamlEvent, Event.KEY_NAME, NumberType.NONE, "", UNSET_NUMBER);
             } else {
                 throw new IllegalStateException("Expected key but found alias of missing anchor");
             }
