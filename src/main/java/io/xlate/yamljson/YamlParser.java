@@ -203,7 +203,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
     }
 
     void addAnchoredEvent(String anchor, AnchoredEvent<E> anchored) {
-        anchoredEvents.computeIfAbsent(anchor, k -> new ArrayList<>()).add(anchored);
+        anchoredEvents.get(anchor).add(anchored);
     }
 
     BigDecimal parseNumber(NumberType numberType, String text) {
@@ -448,6 +448,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
 
     void addAnchorMetadata(String anchor) {
         if (anchor != null) {
+            anchoredEvents.compute(anchor, (k, v) -> new ArrayList<>());
             anchorStack.addFirst(new AnchorMetadata(anchor, depth));
         }
     }

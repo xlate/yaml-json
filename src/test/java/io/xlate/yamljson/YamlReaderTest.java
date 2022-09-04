@@ -18,10 +18,12 @@ package io.xlate.yamljson;
 import static io.xlate.yamljson.YamlTestHelper.VERSIONS_SOURCE;
 import static io.xlate.yamljson.YamlTestHelper.createReader;
 import static io.xlate.yamljson.YamlTestHelper.testEachVersion;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -121,5 +123,27 @@ class YamlReaderTest {
 
             assertTrue(expectedType.isAssignableFrom(value.getClass()));
         });
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testAliasUsesMostRecentAnchor(String version) {
+        InputStream source = new ByteArrayInputStream(String.format(""
+                + "---%n"
+                + "key1: &v value1%n"
+                + "key2: &v value2%n"
+                + "key3: *v").getBytes());
+
+        JsonObject object = null;
+
+        try (JsonReader reader = createReader(version, source)) {
+            object = reader.readObject();
+            assertThrows(IllegalStateException.class, () -> reader.read());
+        }
+
+        assertNotNull(object);
+        assertEquals("value1", object.getString("key1"));
+        assertEquals("value2", object.getString("key2"));
+        assertEquals("value2", object.getString("key3"));
     }
 }
