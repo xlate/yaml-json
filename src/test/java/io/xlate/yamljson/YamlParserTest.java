@@ -242,4 +242,27 @@ class YamlParserTest {
         assertNotNull(closeException);
     }
 
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    // Test that the "billion laughs" (with only a million) scenario can be parsed without crashing
+    void testMillionLaughs(String version) throws IOException {
+        int laughCount = 0;
+
+        try (InputStream source = getClass().getResourceAsStream("/million-laughs.yaml");
+                JsonParser parser = createParser(version, source)) {
+            while (parser.hasNext()) {
+                switch (parser.next()) {
+                case VALUE_STRING:
+                    assertEquals("lol", parser.getString());
+                    laughCount++;
+                    break;
+                default:
+                    // Ignore others
+                    break;
+                }
+            }
+        }
+
+        assertEquals(1_111_111, laughCount);
+    }
 }

@@ -21,8 +21,14 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.ParsePosition;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Queue;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -59,7 +65,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
     private static final Logger LOGGER = Logger.getLogger(YamlParser.class.getName());
 
     static final String MSG_EXCEPTION = "Exception reading the YAML stream as JSON";
-    static final String MSG_UNEXPECTED = "Unexpected event reached parsing YAML: ";
+    static final String MSG_UNEXPECTED = "Unexpected jsonEvent reached parsing YAML: ";
 
     // Support all the values from the Core Schema (https://yaml.org/spec/1.2/spec.html#id2804923)
     static final Set<String> VALUES_NULL = Set.of("null", "Null", "NULL", "~");
@@ -72,13 +78,17 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
     // @formatter:on
     static final Set<String> VALUES_NAN = Set.of(YamlNumbers.CANONICAL_NAN, ".NaN", ".NAN");
 
+    static final BigDecimal UNSET_NUMBER = new BigDecimal(0);
+
     final Reader yamlSource;
     final Iterator<E> yamlEvents;
 
-    final Queue<E> yamlEventQueue = new ArrayDeque<>();
-    final Queue<Event> jsonEventQueue = new ArrayDeque<>();
-    final Queue<NumberType> numberTypeQueue = new ArrayDeque<>();
-    final Queue<String> valueQueue = new ArrayDeque<>();
+    final Deque<E> yamlEventQueue = new ArrayDeque<>();
+    final Deque<Boolean> aliasExpansionQueue = new ArrayDeque<>();
+    final Deque<Event> jsonEventQueue = new ArrayDeque<>();
+    final Deque<String> valueQueue = new ArrayDeque<>();
+    final Deque<NumberType> numberTypeQueue = new ArrayDeque<>();
+    final Deque<BigDecimal> numberQueue = new ArrayDeque<>();
 
     final DecimalFormat decimalParser = new DecimalFormat();
     final ParsePosition decimalPosition = new ParsePosition(0);
@@ -91,6 +101,42 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
 
     final Boolean[] valueIsKey = new Boolean[200];
     int depth = -1;
+    final Deque<AnchorMetadata> anchorStack = new ArrayDeque<>();
+
+    static class AnchorMetadata {
+        final String name;
+        final int startDepth;
+
+        public AnchorMetadata(String name, int startDepth) {
+            this.name = name;
+            this.startDepth = startDepth;
+        }
+    }
+
+    static class AnchoredEvent<E> {
+        final E yamlEvent;
+
+        AnchoredEvent(E yamlEvent) {
+            this.yamlEvent = yamlEvent;
+        }
+    }
+
+    static class AnchoredDataEvent<E> extends AnchoredEvent<E> {
+        final Event jsonEvent;
+        final String value;
+        final NumberType numberType;
+        final BigDecimal numberValue;
+
+        AnchoredDataEvent(E yamlEvent, Event jsonEvent, String value, NumberType numberType, BigDecimal numberValue) {
+            super(yamlEvent);
+            this.jsonEvent = jsonEvent;
+            this.value = value;
+            this.numberType = numberType;
+            this.numberValue = numberValue;
+        }
+    }
+
+    final Map<String, List<AnchoredEvent<E>>> anchoredEvents = new HashMap<>();
 
     YamlParser(Iterator<E> yamlEvents, Reader yamlReader) {
         this.yamlEvents = yamlEvents;
@@ -100,12 +146,62 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
     void advanceEvent() {
         currentYamlEvent = yamlEventQueue.remove();
         currentEvent = jsonEventQueue.remove();
-        currentNumberType = numberTypeQueue.remove();
         currentValue = valueQueue.remove();
+        currentNumberType = numberTypeQueue.remove();
+        currentNumber = numberQueue.remove();
 
-        if (currentEvent == Event.VALUE_NUMBER) {
-            this.currentNumber = parseNumber(currentNumberType, currentValue);
+        if (currentNumberType == NumberType.NONE) {
+            currentNumber = null;
         }
+
+        String alias = getAlias(currentYamlEvent);
+        boolean aliasExpansion = aliasExpansionQueue.remove();
+
+        if (!aliasExpansion) {
+            addAnchoredEvent(currentYamlEvent, alias);
+        }
+
+        if (alias != null) {
+            Event jsonEventOverride = currentEvent != Event.VALUE_NULL ? currentEvent : null;
+            List<AnchoredEvent<E>> events = anchoredEvents.get(alias);
+            ListIterator<AnchoredEvent<E>> iterator = events.listIterator(events.size());
+
+            while (iterator.hasPrevious()) {
+                enqueue(iterator.previous(), jsonEventOverride);
+            }
+
+            advanceEvent();
+        }
+    }
+
+    void addAnchoredEvent(E yamlEvent, String alias) {
+        if (!anchorStack.isEmpty()) {
+            Iterator<AnchorMetadata> iter = anchorStack.iterator();
+
+            while (iter.hasNext()) {
+                AnchorMetadata anchorMeta = iter.next();
+
+                if (anchorMeta.startDepth <= depth) {
+                    if (alias != null) {
+                        addAnchoredAliasEvent(anchorMeta.name, yamlEvent);
+                    } else {
+                        addAnchoredDataEvent(anchorMeta.name, yamlEvent, currentEvent, currentValue, currentNumberType, currentNumber);
+                    }
+                }
+            }
+        }
+    }
+
+    void addAnchoredAliasEvent(String anchor, E yamlEvent) {
+        addAnchoredEvent(anchor, new AnchoredEvent<>(yamlEvent));
+    }
+
+    void addAnchoredDataEvent(String anchor, E yamlEvent, Event jsonEvent, String value, NumberType numberType, BigDecimal numberValue) {
+        addAnchoredEvent(anchor, new AnchoredDataEvent<>(yamlEvent, jsonEvent, value, numberType, numberValue));
+    }
+
+    void addAnchoredEvent(String anchor, AnchoredEvent<E> anchored) {
+        anchoredEvents.get(anchor).add(anchored);
     }
 
     BigDecimal parseNumber(NumberType numberType, String text) {
@@ -133,94 +229,125 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         return parsed;
     }
 
-    void enqueue(Event event, NumberType numberType, String value) {
-        yamlEventQueue.add(currentYamlEvent);
-        jsonEventQueue.add(event);
-        numberTypeQueue.add(numberType != null ? numberType : NumberType.NONE);
-        valueQueue.add(value != null ? value : "");
+    BigDecimal numberValue(Event jsonEvent, NumberType numberType, String value, BigDecimal numberValue) {
+        if (jsonEvent == Event.VALUE_NUMBER) {
+            numberValue = Objects.requireNonNullElseGet(numberValue, () -> parseNumber(numberType, value));
+            return Objects.requireNonNullElse(numberValue, UNSET_NUMBER);
+        }
+        return UNSET_NUMBER;
     }
 
-    void enqueue(Event event) {
-        this.enqueue(event, null, null);
+    void enqueueFirst(E yamlEvent, Boolean aliasExpansion, Event jsonEvent, NumberType numberType, String value, BigDecimal numberValue) {
+        yamlEventQueue.addFirst(yamlEvent);
+        aliasExpansionQueue.addFirst(aliasExpansion);
+        jsonEventQueue.addFirst(jsonEvent);
+        numberTypeQueue.addFirst(numberType);
+        valueQueue.addFirst(value);
+        numberQueue.addFirst(numberValue(jsonEvent, numberType, value, numberValue));
     }
 
-    void enqueue(Event event, String value) {
-        this.enqueue(event, null, value);
+    void enqueue(AnchoredEvent<E> anchor, Event jsonEventOverride) {
+        String alias = getAlias(anchor.yamlEvent);
+
+        if (alias != null) {
+            enqueueFirst(anchor.yamlEvent, Boolean.TRUE, Event.VALUE_NULL, NumberType.NONE, "", UNSET_NUMBER);
+        } else {
+            AnchoredDataEvent<E> dataEvent = (AnchoredDataEvent<E>) anchor;
+            Event jsonEvent = Objects.requireNonNullElse(jsonEventOverride, dataEvent.jsonEvent);
+            enqueueFirst(anchor.yamlEvent, Boolean.TRUE, jsonEvent, dataEvent.numberType, dataEvent.value, dataEvent.numberValue);
+        }
     }
 
-    void enqueueConstantOrString(String dataText, Set<String> constants, Event constantType) {
+    void enqueue(E yamlEvent, Event jsonEvent, NumberType numberType, String value, BigDecimal numberValue) {
+        yamlEventQueue.addLast(yamlEvent);
+        aliasExpansionQueue.addLast(Boolean.FALSE);
+        jsonEventQueue.addLast(jsonEvent);
+        numberTypeQueue.addLast(numberType);
+        valueQueue.addLast(value);
+        numberQueue.addLast(numberValue(jsonEvent, numberType, value, numberValue));
+    }
+
+    void enqueueString(E yamlEvent, Event jsonEvent, String value) {
+        enqueue(yamlEvent, jsonEvent, NumberType.NONE, value, UNSET_NUMBER);
+    }
+
+    void enqueueNumber(E yamlEvent, Event jsonEvent, NumberType numberType, String value) {
+        enqueue(yamlEvent, jsonEvent, numberType, value, null);
+    }
+
+    void enqueueConstantOrString(E yamlEvent, String dataText, Set<String> constants, Event constantType) {
         final Event dataEvent = constants.contains(dataText) ? constantType : Event.VALUE_STRING;
-        enqueue(dataEvent, dataText);
+        enqueueString(yamlEvent, dataEvent, dataText);
     }
 
-    void enqueueNumberOrString(String dataText) {
+    void enqueueNumberOrString(E yamlEvent, String dataText) {
         if (YamlNumbers.isInteger(dataText)) {
-            enqueue(Event.VALUE_NUMBER, NumberType.INTEGER, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_NUMBER, NumberType.INTEGER, dataText);
         } else if (YamlNumbers.isFloat(dataText)) {
-            enqueue(Event.VALUE_NUMBER, NumberType.FLOAT, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_NUMBER, NumberType.FLOAT, dataText);
         } else {
-            enqueue(Event.VALUE_STRING, dataText);
+            enqueueString(yamlEvent, Event.VALUE_STRING, dataText);
         }
     }
 
-    void enqueueZeroPrefixedValue(String dataText) {
+    void enqueueZeroPrefixedValue(E yamlEvent, String dataText) {
         if (YamlNumbers.isOctal(dataText)) {
-            enqueue(Event.VALUE_NUMBER, NumberType.OCTAL, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_NUMBER, NumberType.OCTAL, dataText);
         } else if (YamlNumbers.isHexadecimal(dataText)) {
-            enqueue(Event.VALUE_NUMBER, NumberType.HEXADECIMAL, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_NUMBER, NumberType.HEXADECIMAL, dataText);
         } else {
-            enqueueNumberOrString(dataText);
+            enqueueNumberOrString(yamlEvent, dataText);
         }
     }
 
-    void enqueueDotPrefixedValue(String dataText) {
+    void enqueueDotPrefixedValue(E yamlEvent, String dataText) {
         if (VALUES_INFINITY.contains(dataText)) {
-            enqueue(Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
         } else if (VALUES_NAN.contains(dataText)) {
-            enqueue(Event.VALUE_STRING, NumberType.NAN, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_STRING, NumberType.NAN, dataText);
         } else if (YamlNumbers.isFloat(dataText)) {
-            enqueue(Event.VALUE_NUMBER, NumberType.FLOAT, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_NUMBER, NumberType.FLOAT, dataText);
         } else {
-            enqueue(Event.VALUE_STRING, dataText);
+            enqueueString(yamlEvent, Event.VALUE_STRING, dataText);
         }
     }
 
-    void enqueuePlusPrefixedValue(String dataText) {
+    void enqueuePlusPrefixedValue(E yamlEvent, String dataText) {
         if (VALUES_INFINITY.contains(dataText)) {
-            enqueue(Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_STRING, NumberType.POSITIVE_INFINITY, dataText);
         } else {
-            enqueueNumberOrString(dataText);
+            enqueueNumberOrString(yamlEvent, dataText);
         }
     }
 
-    void enqueueMinusPrefixedValue(String dataText) {
+    void enqueueMinusPrefixedValue(E yamlEvent, String dataText) {
         if (VALUES_INFINITY.contains(dataText)) {
-            enqueue(Event.VALUE_STRING, NumberType.NEGATIVE_INFINITY, dataText);
+            enqueueNumber(yamlEvent, Event.VALUE_STRING, NumberType.NEGATIVE_INFINITY, dataText);
         } else {
-            enqueueNumberOrString(dataText);
+            enqueueNumberOrString(yamlEvent, dataText);
         }
     }
 
-    void enqueueDataElement(final String dataText) {
+    void enqueueDataElement(E yamlEvent, final String dataText) {
         switch (dataText.charAt(0)) {
         case 'n':
         case 'N':
         case '~':
-            enqueueConstantOrString(dataText, VALUES_NULL, Event.VALUE_NULL);
+            enqueueConstantOrString(yamlEvent, dataText, VALUES_NULL, Event.VALUE_NULL);
             break;
 
         case 't':
         case 'T':
-            enqueueConstantOrString(dataText, VALUES_TRUE, Event.VALUE_TRUE);
+            enqueueConstantOrString(yamlEvent, dataText, VALUES_TRUE, Event.VALUE_TRUE);
             break;
 
         case 'f':
         case 'F':
-            enqueueConstantOrString(dataText, VALUES_FALSE, Event.VALUE_FALSE);
+            enqueueConstantOrString(yamlEvent, dataText, VALUES_FALSE, Event.VALUE_FALSE);
             break;
 
         case '0':
-            enqueueZeroPrefixedValue(dataText);
+            enqueueZeroPrefixedValue(yamlEvent, dataText);
             break;
 
         case '1':
@@ -232,23 +359,23 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         case '7':
         case '8':
         case '9':
-            enqueueNumberOrString(dataText);
+            enqueueNumberOrString(yamlEvent, dataText);
             break;
 
         case '.':
-            enqueueDotPrefixedValue(dataText);
+            enqueueDotPrefixedValue(yamlEvent, dataText);
             break;
 
         case '+':
-            enqueuePlusPrefixedValue(dataText);
+            enqueuePlusPrefixedValue(yamlEvent, dataText);
             break;
 
         case '-':
-            enqueueMinusPrefixedValue(dataText);
+            enqueueMinusPrefixedValue(yamlEvent, dataText);
             break;
 
         default:
-            enqueue(Event.VALUE_STRING, dataText);
+            enqueueString(yamlEvent, Event.VALUE_STRING, dataText);
             break;
         }
     }
@@ -257,15 +384,36 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         final String dataText = getValue(yamlEvent);
 
         if (Boolean.TRUE.equals(needKeyName)) {
-            enqueue(Event.KEY_NAME, dataText);
+            enqueueString(yamlEvent, Event.KEY_NAME, dataText);
         } else if (isPlain(yamlEvent)) {
             if (dataText.isEmpty()) {
-                enqueue(Event.VALUE_NULL);
+                enqueue(yamlEvent, Event.VALUE_NULL, NumberType.NONE, "", UNSET_NUMBER);
             } else {
-                enqueueDataElement(dataText);
+                enqueueDataElement(yamlEvent, dataText);
             }
         } else {
-            enqueue(Event.VALUE_STRING, dataText);
+            enqueueString(yamlEvent, Event.VALUE_STRING, dataText);
+        }
+    }
+
+    void enqueueAlias(E yamlEvent, Boolean needKeyName) {
+        String alias = getAlias(yamlEvent);
+
+        if (!anchoredEvents.containsKey(alias)) {
+            throw new IllegalStateException("Encountered alias of missing anchor");
+        }
+
+        if (Boolean.TRUE.equals(needKeyName)) {
+            List<AnchoredEvent<E>> anchored = anchoredEvents.get(alias);
+
+            if (anchored.size() != 1) {
+                throw new IllegalStateException("Expected key but found alias of non-scalar anchor");
+            }
+
+            // Enqueue the alias event, specifying that the JSON event is KEY_NAME
+            enqueue(yamlEvent, Event.KEY_NAME, NumberType.NONE, "", UNSET_NUMBER);
+        } else {
+            enqueue(yamlEvent, Event.VALUE_NULL, NumberType.NONE, "", UNSET_NUMBER);
         }
     }
 
@@ -282,10 +430,31 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         this.valueIsKey[depth] = keyExpected;
     }
 
+    void decrementDepth() {
+        depth--;
+    }
+
+    void addAnchorMetadata(String anchor) {
+        if (anchor != null) {
+            anchoredEvents.compute(anchor, (k, v) -> new ArrayList<>());
+            anchorStack.addFirst(new AnchorMetadata(anchor, depth));
+        }
+    }
+
+    void removeAnchorMetadata(E yamlEvent, Event jsonEvent) {
+        AnchorMetadata anchor = anchorStack.peekFirst();
+        if (anchor != null && anchor.startDepth == depth) {
+            if (jsonEvent != null) {
+                addAnchoredDataEvent(anchor.name, yamlEvent, jsonEvent, "", NumberType.NONE, UNSET_NUMBER);
+            }
+            anchorStack.removeFirst();
+        }
+    }
+
     boolean enqueueEvent(E yamlEvent) {
-        LOGGER.finer(() -> "Enqueue YAML event: " + yamlEvent);
-        currentYamlEvent = yamlEvent;
+        LOGGER.finer(() -> "Enqueue YAML jsonEvent: " + yamlEvent);
         currentNumber = null;
+        removeAnchorMetadata(yamlEvent, null);
         boolean eventFound = true;
         String eventId = getEventId(yamlEvent);
 
@@ -294,39 +463,62 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         case "DocumentEnd":
             eventFound = false;
             break;
+
         case "SequenceStart":
+            addAnchorMetadata(getAnchor(yamlEvent));
             incrementDepth(null);
-            enqueue(Event.START_ARRAY);
+            enqueue(yamlEvent, Event.START_ARRAY, NumberType.NONE, "", UNSET_NUMBER);
             break;
+
         case "SequenceEnd":
-            depth--;
-            enqueue(Event.END_ARRAY);
+            enqueue(yamlEvent, Event.END_ARRAY, NumberType.NONE, "", UNSET_NUMBER);
+            decrementDepth();
+            removeAnchorMetadata(yamlEvent, Event.END_ARRAY);
             break;
+
         case "MappingStart":
+            addAnchorMetadata(getAnchor(yamlEvent));
             incrementDepth(Boolean.TRUE);
-            enqueue(Event.START_OBJECT);
+            enqueue(yamlEvent, Event.START_OBJECT, NumberType.NONE, "", UNSET_NUMBER);
             break;
+
         case "MappingEnd":
-            depth--;
-            enqueue(Event.END_OBJECT);
+            enqueue(yamlEvent, Event.END_OBJECT, NumberType.NONE, "", UNSET_NUMBER);
+            decrementDepth();
+            removeAnchorMetadata(yamlEvent, Event.END_OBJECT);
             break;
-        case "Scalar":
+
+        case "Scalar": {
+            addAnchorMetadata(getAnchor(yamlEvent));
             Boolean keyExpected = isKeyExpected();
             enqueueDataElement(yamlEvent, keyExpected);
+
             if (keyExpected != null) {
                 this.valueIsKey[depth] = Boolean.valueOf(!keyExpected);
             }
+
             break;
-        case "Alias":
-            // Aliases skipped - not supported
-            eventFound = false;
+        }
+
+        case "Alias": {
+            Boolean keyExpected = isKeyExpected();
+
+            enqueueAlias(yamlEvent, keyExpected);
+            addAnchorMetadata(getAnchor(yamlEvent));
+
+            if (keyExpected != null) {
+                this.valueIsKey[depth] = Boolean.valueOf(!keyExpected);
+            }
+
             break;
+        }
+
         case "StreamStart":
         case "StreamEnd":
             eventFound = false;
             break;
         default:
-            throw new IllegalStateException("Unknown state: " + eventId);
+            throw new IllegalStateException("Unknown YAML event: " + eventId);
         }
 
         return eventFound;
@@ -341,7 +533,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
                     break;
                 }
             }
-        } catch (RuntimeException re) {
+        } catch (Exception re) {
             Throwable cause = re.getCause();
 
             if (cause instanceof IOException) {
@@ -349,8 +541,6 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
             }
 
             throw new JsonParsingException("Exception reading YAML", re, this);
-        } catch (Exception e) {
-            throw new JsonParsingException("Exception reading YAML", e, this);
         }
     }
 
@@ -358,7 +548,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         final Event current = this.currentEvent;
 
         if (current != Event.VALUE_NUMBER) {
-            throw new IllegalStateException("Unable to get number value for event [" + current + ']');
+            throw new IllegalStateException("Unable to get number value for jsonEvent [" + current + ']');
         }
     }
 
@@ -371,7 +561,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         case VALUE_NUMBER:
             break;
         default:
-            throw new IllegalStateException("Unable to get string value for event [" + current + ']');
+            throw new IllegalStateException("Unable to get string value for jsonEvent [" + current + ']');
         }
     }
 
@@ -386,7 +576,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         case VALUE_TRUE:
             break;
         default:
-            throw new IllegalStateException("Current event is not a value [" + current + ']');
+            throw new IllegalStateException("Current jsonEvent is not a value [" + current + ']');
         }
     }
 
@@ -494,6 +684,10 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
     protected abstract int getMarkLine(M mark);
     protected abstract int getMarkColumn(M mark);
     protected abstract int getMarkIndex(M mark);
+
+    protected abstract String getAnchor(E event);
+
+    protected abstract String getAlias(E event);
 
     protected abstract String getEventId(E event);
 

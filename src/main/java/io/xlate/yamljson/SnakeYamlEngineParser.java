@@ -54,6 +54,30 @@ final class SnakeYamlEngineParser extends YamlParser<org.snakeyaml.engine.v2.eve
     }
 
     @Override
+    protected String getAnchor(org.snakeyaml.engine.v2.events.Event event) {
+        if (event instanceof org.snakeyaml.engine.v2.events.NodeEvent) {
+            if (event instanceof org.snakeyaml.engine.v2.events.AliasEvent) {
+                // Anchors associated with an alias not supported
+                return null;
+            }
+
+            return ((org.snakeyaml.engine.v2.events.NodeEvent) event)
+                    .getAnchor()
+                    .map(org.snakeyaml.engine.v2.common.Anchor::getValue)
+                    .orElse(null);
+        }
+        return null;
+    }
+
+    @Override
+    protected String getAlias(org.snakeyaml.engine.v2.events.Event event) {
+        if (event instanceof org.snakeyaml.engine.v2.events.AliasEvent) {
+            return ((org.snakeyaml.engine.v2.events.AliasEvent) event).getAlias().getValue();
+        }
+        return null;
+    }
+
+    @Override
     protected String getValue(org.snakeyaml.engine.v2.events.Event event) {
         return ((org.snakeyaml.engine.v2.events.ScalarEvent) event).getValue();
     }
