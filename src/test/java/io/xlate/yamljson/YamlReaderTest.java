@@ -37,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
@@ -145,5 +146,23 @@ class YamlReaderTest {
         assertEquals("value1", object.getString("key1"));
         assertEquals("value2", object.getString("key2"));
         assertEquals("value2", object.getString("key3"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "Test aliased key without anchor      , ---%nkey1: value%nkey2: *v, 'Encountered alias of missing anchor'",
+        "Test aliased key to non-scalar anchor, ---%nkey1: &array [ value1 ]%n*array : value2, 'Expected key but found alias of non-scalar anchor'"
+    })
+    void testInvalidAliases(String label, String yaml, String errorMessage) {
+        testEachVersion(version -> {
+            InputStream source = new ByteArrayInputStream(String.format(yaml).getBytes());
+            JsonException thrown;
+
+            try (JsonReader reader = createReader(version, source)) {
+                thrown = assertThrows(JsonException.class, () -> reader.readObject());
+            }
+
+            assertEquals(errorMessage, thrown.getCause().getMessage());
+        });
     }
 }

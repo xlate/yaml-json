@@ -75,11 +75,6 @@ final class SnakeYamlParser extends YamlParser<org.yaml.snakeyaml.events.Event, 
     }
 
     @Override
-    protected boolean isScalar(org.yaml.snakeyaml.events.Event event) {
-        return event instanceof org.yaml.snakeyaml.events.ScalarEvent;
-    }
-
-    @Override
     protected String getValue(org.yaml.snakeyaml.events.Event event) {
         return ((org.yaml.snakeyaml.events.ScalarEvent) event).getValue();
     }
