@@ -418,11 +418,13 @@ abstract class YamlParser<E, M> implements JsonParser {
             // Enqueue the alias event, specifying that the JSON event is KEY_NAME
             enqueue(yamlEvent, Event.KEY_NAME, NumberType.NONE, "", UNSET_NUMBER);
         } else {
-            long expansionSize = countExpansion(alias, maxAliasExpansionSize);
+            if (maxAliasExpansionSize < Long.MAX_VALUE) {
+                long expansionSize = countExpansion(alias, maxAliasExpansionSize);
 
-            if (expansionSize >= maxAliasExpansionSize) {
-                String message = String.format("Alias '%s' expands to too many scalars: %d", alias, expansionSize);
-                throw new JsonParsingException(message, getLocation(yamlEvent));
+                if (expansionSize >= maxAliasExpansionSize) {
+                    String message = String.format("Alias '%s' expands to too many scalars: %d", alias, expansionSize);
+                    throw new JsonParsingException(message, getLocation(yamlEvent));
+                }
             }
 
             enqueue(yamlEvent, Event.VALUE_NULL, NumberType.NONE, "", UNSET_NUMBER);
