@@ -21,6 +21,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,20 +30,20 @@ import jakarta.json.stream.JsonGeneratorFactory;
 
 class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
 
-    private final Map<String, ?> properties;
+    private final Map<String, Object> properties;
     private final boolean useSnakeYamlEngine;
     private final Object snakeYamlSettings;
 
     YamlGeneratorFactory(Map<String, ?> properties) {
-        this.properties = properties;
+        this.properties = new HashMap<>(properties);
 
         Object version = properties.get(Yaml.Settings.YAML_VERSION);
         useSnakeYamlEngine = Yaml.Versions.V1_2.equals(version);
 
         if (useSnakeYamlEngine) {
-            snakeYamlSettings = loadProvider(() -> buildDumpSettings(properties), MOD_SNAKEYAML_ENGINE);
+            snakeYamlSettings = loadProvider(() -> buildDumpSettings(this.properties), MOD_SNAKEYAML_ENGINE);
         } else {
-            snakeYamlSettings = loadProvider(() -> buildDumperOptions(properties), MOD_SNAKEYAML);
+            snakeYamlSettings = loadProvider(() -> buildDumperOptions(this.properties), MOD_SNAKEYAML);
         }
     }
 

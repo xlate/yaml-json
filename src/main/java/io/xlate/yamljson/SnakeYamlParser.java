@@ -17,17 +17,18 @@ package io.xlate.yamljson;
 
 import java.io.Reader;
 import java.util.Iterator;
+import java.util.Map;
 
 final class SnakeYamlParser extends YamlParser<org.yaml.snakeyaml.events.Event, org.yaml.snakeyaml.error.Mark> {
 
-    SnakeYamlParser(Iterator<org.yaml.snakeyaml.events.Event> yamlEvents, Reader yamlReader) {
-        super(yamlEvents, yamlReader);
+    SnakeYamlParser(Iterator<org.yaml.snakeyaml.events.Event> yamlEvents, Reader yamlReader, Map<String, ?> properties) {
+        super(yamlEvents, yamlReader, properties);
     }
 
     @Override
-    protected org.yaml.snakeyaml.error.Mark getMark() {
-        if (currentYamlEvent != null) {
-            return currentYamlEvent.getStartMark();
+    protected org.yaml.snakeyaml.error.Mark getMark(org.yaml.snakeyaml.events.Event event) {
+        if (event != null) {
+            return event.getStartMark();
         }
 
         return null;

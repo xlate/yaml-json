@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
@@ -28,16 +27,14 @@ import jakarta.json.JsonReaderFactory;
 
 class YamlReaderFactory implements JsonReaderFactory, SettingsBuilder {
 
-    private final Map<String, ?> properties;
     private final YamlParserFactory parserFactory;
 
-    YamlReaderFactory(Map<String, ?> properties, YamlParserFactory parserFactory) {
-        this.properties = properties;
+    YamlReaderFactory(YamlParserFactory parserFactory) {
         this.parserFactory = parserFactory;
     }
 
     YamlReaderFactory(Map<String, ?> properties) {
-        this(properties, new YamlParserFactory(properties));
+        this(new YamlParserFactory(properties));
     }
 
     private YamlReader createYamlReader(Reader reader) {
@@ -65,7 +62,7 @@ class YamlReaderFactory implements JsonReaderFactory, SettingsBuilder {
 
     @Override
     public Map<String, ?> getConfigInUse() {
-        return Collections.unmodifiableMap(this.properties);
+        return parserFactory.getConfigInUse();
     }
 
 }

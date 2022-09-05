@@ -37,7 +37,7 @@ import jakarta.json.stream.JsonLocation;
 import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParsingException;
 
-abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
+abstract class YamlParser<E, M> implements JsonParser {
 
     enum NumberType {
         INTEGER,
@@ -79,9 +79,12 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
     static final Set<String> VALUES_NAN = Set.of(YamlNumbers.CANONICAL_NAN, ".NaN", ".NAN");
 
     static final BigDecimal UNSET_NUMBER = new BigDecimal(0);
+    static final YamlLocation UNKNOWN_LOCATION = new YamlLocation(-1, -1, -1);
 
     final Reader yamlSource;
     final Iterator<E> yamlEvents;
+    final Map<String, ?> properties;
+    final long maxAliasExpansionSize;
 
     final Deque<E> yamlEventQueue = new ArrayDeque<>();
     final Deque<Boolean> aliasExpansionQueue = new ArrayDeque<>();
@@ -138,9 +141,11 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
 
     final Map<String, List<AnchoredEvent<E>>> anchoredEvents = new HashMap<>();
 
-    YamlParser(Iterator<E> yamlEvents, Reader yamlReader) {
+    YamlParser(Iterator<E> yamlEvents, Reader yamlReader, Map<String, ?> properties) {
         this.yamlEvents = yamlEvents;
         this.yamlSource = yamlReader;
+        this.properties = properties;
+        this.maxAliasExpansionSize = (Long) properties.get(Yaml.Settings.LOAD_MAX_ALIAS_EXPANSION_SIZE);
     }
 
     void advanceEvent() {
@@ -413,8 +418,36 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
             // Enqueue the alias event, specifying that the JSON event is KEY_NAME
             enqueue(yamlEvent, Event.KEY_NAME, NumberType.NONE, "", UNSET_NUMBER);
         } else {
+            long expansionSize = countExpansion(alias, maxAliasExpansionSize);
+
+            if (expansionSize >= maxAliasExpansionSize) {
+                String message = String.format("Alias '%s' expands to too many scalars: %d", alias, expansionSize);
+                throw new JsonParsingException(message, getLocation(yamlEvent));
+            }
+
             enqueue(yamlEvent, Event.VALUE_NULL, NumberType.NONE, "", UNSET_NUMBER);
         }
+    }
+
+    long countExpansion(String alias, long limit) {
+        List<AnchoredEvent<E>> anchored = anchoredEvents.get(alias);
+        long count = 0;
+
+        for (AnchoredEvent<E> event : anchored) {
+            String nestedAlias = getAlias(event.yamlEvent);
+
+            if (nestedAlias != null) {
+                count += countExpansion(nestedAlias, limit);
+            } else if ("Scalar".equals(getEventId(event.yamlEvent))) {
+                count++;
+            }
+
+            if (count >= limit) {
+                break;
+            }
+        }
+
+        return count;
     }
 
     Boolean isKeyExpected() {
@@ -533,6 +566,8 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
                     break;
                 }
             }
+        } catch (JsonException je) {
+            throw je;
         } catch (Exception re) {
             Throwable cause = re.getCause();
 
@@ -540,7 +575,7 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
                 throw new JsonException("IOException encountered reading YAML", cause);
             }
 
-            throw new JsonParsingException("Exception reading YAML", re, this);
+            throw new JsonParsingException("Exception reading YAML", re, getLocation());
         }
     }
 
@@ -655,32 +690,25 @@ abstract class YamlParser<E, M> implements JsonParser, JsonLocation {
         return this.currentNumberType == NumberType.NAN;
     }
 
-    // JsonLocation
-
     @Override
     public JsonLocation getLocation() {
-        return this;
+        return getLocation(currentYamlEvent);
     }
 
-    @Override
-    public long getLineNumber() {
-        M mark = getMark();
-        return mark != null ? getMarkLine(mark) + 1 : -1;
+    JsonLocation getLocation(E yamlEvent) {
+        M mark = getMark(yamlEvent);
+        YamlLocation location = null;
+
+        if (mark != null) {
+            location = new YamlLocation(getMarkLine(mark) + 1L, getMarkColumn(mark) + 1L, getMarkIndex(mark));
+        } else {
+            location = UNKNOWN_LOCATION;
+        }
+
+        return location;
     }
 
-    @Override
-    public long getColumnNumber() {
-        M mark = getMark();
-        return mark != null ? getMarkColumn(mark) + 1 : -1;
-    }
-
-    @Override
-    public long getStreamOffset() {
-        M mark = getMark();
-        return mark != null ? getMarkIndex(mark) : -1;
-    }
-
-    protected abstract M getMark();
+    protected abstract M getMark(E event);
     protected abstract int getMarkLine(M mark);
     protected abstract int getMarkColumn(M mark);
     protected abstract int getMarkIndex(M mark);

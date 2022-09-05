@@ -19,7 +19,6 @@ import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
@@ -28,16 +27,14 @@ import jakarta.json.JsonWriterFactory;
 
 class YamlWriterFactory implements JsonWriterFactory, SettingsBuilder {
 
-    private final Map<String, ?> properties;
     private final YamlGeneratorFactory generatorFactory;
 
-    YamlWriterFactory(Map<String, ?> properties, YamlGeneratorFactory generatorFactory) {
-        this.properties = properties;
+    YamlWriterFactory(YamlGeneratorFactory generatorFactory) {
         this.generatorFactory = generatorFactory;
     }
 
     YamlWriterFactory(Map<String, ?> properties) {
-        this(properties, new YamlGeneratorFactory(properties));
+        this(new YamlGeneratorFactory(properties));
     }
 
     @Override
@@ -60,7 +57,7 @@ class YamlWriterFactory implements JsonWriterFactory, SettingsBuilder {
 
     @Override
     public Map<String, ?> getConfigInUse() {
-        return Collections.unmodifiableMap(this.properties);
+        return generatorFactory.getConfigInUse();
     }
 
 }

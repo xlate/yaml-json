@@ -119,11 +119,30 @@ public final class Yaml {
         public static final String YAML_VERSION = "io.xlate.yamljson.YAML_VERSION";
 
         /**
+         * The maximum number of scalars to which an alias (or chain of aliases via arrays/objects)
+         * may expand.
+         *
+         * @since 0.1.0
+         */
+        public static final String LOAD_MAX_ALIAS_EXPANSION_SIZE = "LOAD_MAX_ALIAS_EXPANSION_SIZE";
+
+        /**
+         * Requires snakeyaml-engine, not supported with snakeyaml.
+         *
+         * @see org.snakeyaml.engine.v2.api.LoadSettingsBuilder#setUseMarks(boolean)
+         *
+         * @since 0.1.0
+         */
+        public static final String LOAD_USE_MARKS = "LOAD_USE_MARKS";
+
+        /**
+         * @see org.yaml.snakeyaml.DumperOptions#setExplicitStart(boolean)
          * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitStart(boolean)
          */
         public static final String DUMP_EXPLICIT_START = "DUMP_EXPLICIT_START";
 
         /**
+         * @see org.yaml.snakeyaml.DumperOptions#setExplicitEnd(boolean)
          * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitEnd(boolean)
          */
         public static final String DUMP_EXPLICIT_END = "DUMP_EXPLICIT_END";

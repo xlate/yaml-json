@@ -79,7 +79,17 @@ final class YamlTestHelper {
             return Yaml.createParser(stream);
         }
 
-        return Yaml.createParserFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createParser(stream);
+        return createParser(stream, Map.of(Yaml.Settings.YAML_VERSION, version));
+    }
+
+    static JsonParser createParser(InputStream stream, Map<String, ?> properties) {
+        return Yaml.createParserFactory(properties).createParser(stream);
+    }
+
+    static void readFully(JsonParser parser) {
+        while (parser.hasNext()) {
+            parser.next();
+        }
     }
 
     //////////
@@ -97,7 +107,11 @@ final class YamlTestHelper {
             return Yaml.createReader(stream);
         }
 
-        return Yaml.createReaderFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createReader(stream);
+        return createReader(stream, Map.of(Yaml.Settings.YAML_VERSION, version));
+    }
+
+    static JsonReader createReader(InputStream stream, Map<String, ?> properties) {
+        return Yaml.createReaderFactory(properties).createReader(stream);
     }
 
     //////////
