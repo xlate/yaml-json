@@ -63,9 +63,9 @@ final class YamlProvider extends JsonProvider {
         var defaultProperties = Map.of(Yaml.Settings.YAML_VERSION, defaultVersion);
 
         defaultParserFactory = new YamlParserFactory(defaultProperties);
-        defaultReaderFactory = new YamlReaderFactory(defaultProperties, defaultParserFactory);
+        defaultReaderFactory = new YamlReaderFactory(defaultParserFactory);
         defaultGeneratorFactory = new YamlGeneratorFactory(defaultProperties);
-        defaultWriterFactory = new YamlWriterFactory(defaultProperties, defaultGeneratorFactory);
+        defaultWriterFactory = new YamlWriterFactory(defaultGeneratorFactory);
     }
 
     @Override

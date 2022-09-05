@@ -20,6 +20,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -30,21 +31,21 @@ import jakarta.json.stream.JsonParserFactory;
 
 class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
-    private final Map<String, ?> properties;
+    private final Map<String, Object> properties;
     private final boolean useSnakeYamlEngine;
     private final Object snakeYamlProvider;
 
     YamlParserFactory(Map<String, ?> properties) {
-        this.properties = properties;
+        this.properties = new HashMap<>(properties);
 
         Object version = properties.get(Yaml.Settings.YAML_VERSION);
         useSnakeYamlEngine = Yaml.Versions.V1_2.equals(version);
 
         if (useSnakeYamlEngine) {
-            snakeYamlProvider = loadProvider(() -> new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(properties)),
+            snakeYamlProvider = loadProvider(() -> new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(this.properties)),
                                              MOD_SNAKEYAML_ENGINE);
         } else {
-            snakeYamlProvider = loadProvider(() -> new org.yaml.snakeyaml.Yaml(buildLoaderOptions(properties)),
+            snakeYamlProvider = loadProvider(() -> new org.yaml.snakeyaml.Yaml(buildLoaderOptions(this.properties)),
                                              MOD_SNAKEYAML);
         }
     }
@@ -66,11 +67,11 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
     YamlParser<?, ?> createYamlParser(Reader reader) { // NOSONAR - ignore use of wildcards
         if (useSnakeYamlEngine) {
             var provider = (org.snakeyaml.engine.v2.api.lowlevel.Parse) snakeYamlProvider;
-            return new SnakeYamlEngineParser(provider.parseReader(reader).iterator(), reader);
+            return new SnakeYamlEngineParser(provider.parseReader(reader).iterator(), reader, properties);
         }
 
         var provider = (org.yaml.snakeyaml.Yaml) snakeYamlProvider;
-        return new SnakeYamlParser(provider.parse(reader).iterator(), reader);
+        return new SnakeYamlParser(provider.parse(reader).iterator(), reader, properties);
     }
 
     @Override

@@ -87,7 +87,7 @@ class YamlReader implements JsonReader {
     }
 
     RuntimeException newJsonParsingException(String message, Throwable cause) {
-        return new jakarta.json.stream.JsonParsingException(message, cause, parser);
+        return new jakarta.json.stream.JsonParsingException(message, cause, parser.getLocation());
     }
 
     @Override

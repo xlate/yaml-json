@@ -1,12 +1,14 @@
 package io.xlate.yamljson;
 
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.snakeyaml.engine.v2.api.DumpSettingsBuilder;
 import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.snakeyaml.engine.v2.api.LoadSettingsBuilder;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 
@@ -30,35 +32,39 @@ interface SettingsBuilder {
         }
     }
 
-    default LoaderOptions buildLoaderOptions(Map<String, ?> properties) {
+    default LoaderOptions buildLoaderOptions(Map<String, Object> properties) {
+        LoaderOptions options = new LoaderOptions();
+        replace(properties, Yaml.Settings.LOAD_MAX_ALIAS_EXPANSION_SIZE, Long::valueOf, Long.MAX_VALUE);
         // No load properties supported currently
-        return new LoaderOptions();
+        return options;
     }
 
-    default DumperOptions buildDumperOptions(Map<String, ?> properties) {
+    default DumperOptions buildDumperOptions(Map<String, Object> properties) {
         DumperOptions settings = new DumperOptions();
-        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, settings::setExplicitStart);
-        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, settings::setExplicitEnd);
+        settings.setExplicitStart(getProperty(properties, Yaml.Settings.DUMP_EXPLICIT_START, Boolean::valueOf, false));
+        settings.setExplicitEnd(getProperty(properties, Yaml.Settings.DUMP_EXPLICIT_END, Boolean::valueOf, false));
         return settings;
     }
 
-    default LoadSettings buildLoadSettings(Map<String, ?> properties) {
-        // No load properties supported currently
-        return LoadSettings.builder().build();
-    }
-
-    default DumpSettings buildDumpSettings(Map<String, ?> properties) {
-        DumpSettingsBuilder settings = DumpSettings.builder();
-        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, settings::setExplicitStart);
-        setBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, settings::setExplicitEnd);
+    default LoadSettings buildLoadSettings(Map<String, Object> properties) {
+        LoadSettingsBuilder settings = LoadSettings.builder();
+        settings.setUseMarks(getProperty(properties, Yaml.Settings.LOAD_USE_MARKS, Boolean::valueOf, true));
+        replace(properties, Yaml.Settings.LOAD_MAX_ALIAS_EXPANSION_SIZE, Long::valueOf, Long.MAX_VALUE);
         return settings.build();
     }
 
-    default void setBoolean(Map<String, ?> properties, String key, Consumer<Boolean> setter) {
-        setter.accept(getBoolean(properties, key));
+    default DumpSettings buildDumpSettings(Map<String, Object> properties) {
+        DumpSettingsBuilder settings = DumpSettings.builder();
+        settings.setExplicitStart(getProperty(properties, Yaml.Settings.DUMP_EXPLICIT_START, Boolean::valueOf, false));
+        settings.setExplicitEnd(getProperty(properties, Yaml.Settings.DUMP_EXPLICIT_END, Boolean::valueOf, false));
+        return settings.build();
     }
 
-    default Boolean getBoolean(Map<String, ?> properties, String key) {
-        return Boolean.valueOf(String.valueOf(properties.get(key)));
+    default <T> T getProperty(Map<String, ?> properties, String key, Function<String, T> parser, T defaultValue) {
+        return parser.apply(String.valueOf(Objects.requireNonNullElse(properties.get(key), defaultValue)));
+    }
+
+    default <T> void replace(Map<String, Object> properties, String key, Function<String, T> parser, T defaultValue) {
+        properties.put(key, getProperty(properties, key, parser, defaultValue));
     }
 }

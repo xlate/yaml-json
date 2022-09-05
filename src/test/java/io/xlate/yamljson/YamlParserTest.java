@@ -17,6 +17,7 @@ package io.xlate.yamljson;
 
 import static io.xlate.yamljson.YamlTestHelper.VERSIONS_SOURCE;
 import static io.xlate.yamljson.YamlTestHelper.createParser;
+import static io.xlate.yamljson.YamlTestHelper.readFully;
 import static io.xlate.yamljson.YamlTestHelper.testEachVersion;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,6 +31,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
+import java.util.Map;
 
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -264,5 +266,22 @@ class YamlParserTest {
         }
 
         assertEquals(1_111_111, laughCount);
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    // Test that the "billion laughs" (with only a million) scenario is properly limited
+    void testMillionLaughsLimited(String version) throws IOException {
+        Map<String, Object> properties = Map.of(
+            Yaml.Settings.YAML_VERSION, version,
+            Yaml.Settings.LOAD_MAX_ALIAS_EXPANSION_SIZE, 10_000L);
+        JsonException thrown;
+
+        try (InputStream source = getClass().getResourceAsStream("/million-laughs.yaml");
+                JsonParser parser =  createParser(source, properties)) {
+            thrown = assertThrows(JsonException.class, () -> readFully(parser));
+        }
+
+        assertEquals("Alias 'lol4' expands to too many scalars: 10000", thrown.getMessage());
     }
 }
