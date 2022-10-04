@@ -1,0 +1,9 @@
+key1: value1
+key2: &value2
+  - value2_1
+  - value2_2
+  - value2_3
+key3: value3
+key4:
+  # Invalid - merge key may not reference a sequence/array
+  << : *value2
