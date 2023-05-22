@@ -65,7 +65,7 @@
     <version.snakeyaml-engine>2.6</version.snakeyaml-engine>
 
     <version.junit-jupiter>5.9.3</version.junit-jupiter>
-    <version.parsson>1.1.1</version.parsson>
+    <version.parsson>1.1.2</version.parsson>
   </properties>
 
   <build>
