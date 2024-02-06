@@ -15,6 +15,10 @@
  */
 package io.xlate.yamljson;
 
+import static io.xlate.yamljson.SettingsBuilder.getProperty;
+import static io.xlate.yamljson.SettingsBuilder.loadProvider;
+import static io.xlate.yamljson.SettingsBuilder.replace;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -23,45 +27,71 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParserFactory;
 
+import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.yaml.snakeyaml.LoaderOptions;
+
 class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
+
+    private static final String SNAKEYAML_ENGINE_PROVIDER = "org.snakeyaml.engine.v2.api.lowlevel.Parse";
+
+    static final Function<Map<String, Object>, Object> SNAKEYAML_FACTORY =
+            // No load properties supported currently
+            props -> new org.yaml.snakeyaml.Yaml(new LoaderOptions());
+
+    static final Function<Map<String, Object>, Object> SNAKEYAML_ENGINE_FACTORY =
+            props -> new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(props));
+
+    static LoadSettings buildLoadSettings(Map<String, Object> properties) {
+        return LoadSettings.builder()
+            .setUseMarks(getProperty(properties, Yaml.Settings.LOAD_USE_MARKS, Boolean::valueOf, true))
+            .build();
+    }
 
     private final Map<String, Object> properties;
     private final boolean useSnakeYamlEngine;
     private final Object snakeYamlProvider;
+    private final Function<InputStream, Reader> yamlReaderProvider;
 
     YamlParserFactory(Map<String, ?> properties) {
         this.properties = new HashMap<>(properties);
 
         Object version = properties.get(Yaml.Settings.YAML_VERSION);
-        useSnakeYamlEngine = Yaml.Versions.V1_2.equals(version);
 
-        if (useSnakeYamlEngine) {
-            snakeYamlProvider = loadProvider(() -> new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(this.properties)),
-                                             MOD_SNAKEYAML_ENGINE);
+        if (version == null) {
+            snakeYamlProvider = Optional.empty()
+                .or(() -> loadProvider(this.properties, SNAKEYAML_FACTORY))
+                .or(() -> loadProvider(this.properties, SNAKEYAML_ENGINE_FACTORY))
+                .orElseThrow(SettingsBuilder::noProvidersFound);
+
+            useSnakeYamlEngine = SNAKEYAML_ENGINE_PROVIDER.equals(snakeYamlProvider.getClass().getName());
         } else {
-            snakeYamlProvider = loadProvider(() -> new org.yaml.snakeyaml.Yaml(buildLoaderOptions(this.properties)),
-                                             MOD_SNAKEYAML);
+            useSnakeYamlEngine = Yaml.Versions.V1_2.equals(version);
+
+            if (useSnakeYamlEngine) {
+                snakeYamlProvider = loadProvider(this.properties, SNAKEYAML_ENGINE_FACTORY, MOD_SNAKEYAML_ENGINE);
+            } else {
+                snakeYamlProvider = loadProvider(this.properties, SNAKEYAML_FACTORY, MOD_SNAKEYAML);
+            }
         }
+
+        yamlReaderProvider = useSnakeYamlEngine
+                ? org.snakeyaml.engine.v2.api.YamlUnicodeReader::new
+                : org.yaml.snakeyaml.reader.UnicodeReader::new;
+
+        // Ensure this property is always set, defaulting to Long.MAX_VALUE
+        replace(this.properties, Yaml.Settings.LOAD_MAX_ALIAS_EXPANSION_SIZE, Long::valueOf, Long.MAX_VALUE);
     }
 
     YamlParser<?, ?> createYamlParser(InputStream stream) { // NOSONAR - ignore use of wildcards
-        Reader reader;
-
-        if (useSnakeYamlEngine) {
-            reader = loadProvider(() -> new org.snakeyaml.engine.v2.api.YamlUnicodeReader(stream),
-                                  MOD_SNAKEYAML_ENGINE);
-        } else {
-            reader = loadProvider(() -> new org.yaml.snakeyaml.reader.UnicodeReader(stream),
-                                  MOD_SNAKEYAML);
-        }
-
-        return createYamlParser(reader);
+        return createYamlParser(yamlReaderProvider.apply(stream));
     }
 
     YamlParser<?, ?> createYamlParser(Reader reader) { // NOSONAR - ignore use of wildcards
