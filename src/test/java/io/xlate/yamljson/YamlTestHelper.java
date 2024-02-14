@@ -20,8 +20,11 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import jakarta.json.JsonReader;
 import jakarta.json.JsonWriter;
@@ -32,6 +35,23 @@ final class YamlTestHelper {
 
     static final String VERSIONS_SOURCE = "io.xlate.yamljson.YamlTestHelper#getTestVersions";
 
+    private static final SortedSet<String> VERSIONS_PRESENT;
+
+    static {
+        SortedSet<String> versions = new TreeSet<>();
+
+        SettingsBuilder.loadProvider(new HashMap<>(), YamlParserFactory.SNAKEYAML_FACTORY)
+            .ifPresent(provider -> versions.add(Yaml.Versions.V1_1));
+        SettingsBuilder.loadProvider(new HashMap<>(), YamlParserFactory.SNAKEYAML_ENGINE_FACTORY)
+            .ifPresent(provider -> versions.add(Yaml.Versions.V1_2));
+
+        VERSIONS_PRESENT = versions;
+    }
+
+    static SortedSet<String> detectedVersions() {
+        return VERSIONS_PRESENT;
+    }
+
     interface ThrowingConsumer<T> {
         void accept(T t) throws Exception;
     }
@@ -40,7 +60,7 @@ final class YamlTestHelper {
         String testVersions = System.getProperty(Yaml.Settings.YAML_VERSION);
 
         if (testVersions == null || testVersions.isBlank()) {
-            return Yaml.Versions.supportedVersions();
+            return detectedVersions();
         }
 
         if ("NONE".equals(testVersions)) {
@@ -61,7 +81,7 @@ final class YamlTestHelper {
     }
 
     static boolean isOnlySupportedVersion(String version) {
-        return Yaml.Versions.supportedVersions().size() == 1 && Yaml.Versions.supportedVersions().contains(version);
+        return detectedVersions().size() == 1 && detectedVersions().contains(version);
     }
 
     //////////

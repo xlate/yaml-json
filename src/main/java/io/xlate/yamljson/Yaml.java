@@ -21,10 +21,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.json.JsonArray;
 import jakarta.json.JsonException;
@@ -33,7 +30,6 @@ import jakarta.json.JsonReader;
 import jakarta.json.JsonReaderFactory;
 import jakarta.json.JsonWriter;
 import jakarta.json.JsonWriterFactory;
-import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonGenerator;
 import jakarta.json.stream.JsonGeneratorFactory;
 import jakarta.json.stream.JsonParser;
@@ -77,35 +73,9 @@ public final class Yaml {
     public static final class Versions {
         public static final String V1_1 = "v1.1";
         public static final String V1_2 = "v1.2";
-        static final Set<String> VERSIONS_PRESENT;
-
-        private interface ClassSupplier {
-            Class<?> get() throws LinkageError, ClassNotFoundException;
-        }
-
-        static {
-            Set<String> versions = new LinkedHashSet<>(2);
-            addIfPresent(versions, V1_1, () -> Class.forName(SettingsBuilder.MARKER_SNAKEYAML));
-            addIfPresent(versions, V1_2, () -> Class.forName(SettingsBuilder.MARKER_SNAKEYAML_ENGINE));
-            VERSIONS_PRESENT = Collections.unmodifiableSet(versions);
-        }
 
         private Versions() {
         }
-
-        private static void addIfPresent(Set<String> versions, String version, ClassSupplier loader) {
-            try {
-                loader.get();
-                versions.add(version);
-            } catch (ClassNotFoundException | LinkageError e) {
-                // Ignored
-            }
-        }
-
-        static Set<String> supportedVersions() {
-            return VERSIONS_PRESENT;
-        }
-
     }
 
     /**
@@ -148,12 +118,12 @@ public final class Yaml {
         public static final String DUMP_EXPLICIT_END = "DUMP_EXPLICIT_END";
     }
 
-    private static final JsonProvider PROVIDER = new YamlProvider();
+    private static final YamlProvider PROVIDER = new YamlProvider();
 
     private Yaml() {
     }
 
-    private static JsonProvider provider() {
+    private static YamlProvider provider() {
         return PROVIDER;
     }
 

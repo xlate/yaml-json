@@ -21,8 +21,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonBuilderFactory;
@@ -48,20 +48,9 @@ final class YamlProvider extends JsonProvider {
     private final YamlReaderFactory defaultReaderFactory;
     private final YamlGeneratorFactory defaultGeneratorFactory;
     private final YamlWriterFactory defaultWriterFactory;
-    final String defaultVersion;
 
-    public YamlProvider() {
-        Set<String> supportedVersions = Yaml.Versions.supportedVersions();
-
-        if (supportedVersions.isEmpty()) {
-            throw new IllegalStateException("No YAML providers found on class/module path!");
-        } else {
-            // v1.1 if available, otherwise v1.2
-            defaultVersion = supportedVersions.iterator().next();
-        }
-
-        var defaultProperties = Map.of(Yaml.Settings.YAML_VERSION, defaultVersion);
-
+    YamlProvider() {
+        Map<String, ?> defaultProperties = Collections.emptyMap();
         defaultParserFactory = new YamlParserFactory(defaultProperties);
         defaultReaderFactory = new YamlReaderFactory(defaultParserFactory);
         defaultGeneratorFactory = new YamlGeneratorFactory(defaultProperties);
