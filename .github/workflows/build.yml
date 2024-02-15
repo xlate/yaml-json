@@ -44,6 +44,13 @@ jobs:
       - name: Maven build
         run: mvn -B -Plegacy verify
 
+      ## Save the context information for use in Sonar analysis
+      - name: Save Build Context
+        if: ${{ matrix.java == '21' }}
+        run: echo "$GITHUB_CONTEXT" > target/build-context.json
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+
       ## Attach the target directory for use in Sonar analysis
       - name: Attach Build Output
         if: ${{ matrix.java == '21' }}
