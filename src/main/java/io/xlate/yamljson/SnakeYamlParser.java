@@ -56,15 +56,12 @@ final class SnakeYamlParser extends YamlParser<org.yaml.snakeyaml.events.Event, 
 
     @Override
     protected String getAnchor(org.yaml.snakeyaml.events.Event event) {
-        if (event instanceof org.yaml.snakeyaml.events.NodeEvent) {
-            if (event instanceof org.yaml.snakeyaml.events.AliasEvent) {
-                // Anchors associated with an alias not supported
-                return null;
-            }
-
-            return ((org.yaml.snakeyaml.events.NodeEvent) event).getAnchor();
+        if (event instanceof org.yaml.snakeyaml.events.AliasEvent) {
+            // Anchors associated with an alias not supported
+            return null;
         }
-        return null;
+
+        return ((org.yaml.snakeyaml.events.NodeEvent) event).getAnchor();
     }
 
     @Override
