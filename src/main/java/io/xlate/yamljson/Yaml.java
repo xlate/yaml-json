@@ -72,7 +72,14 @@ public final class Yaml {
      * Constants of supported YAML versions
      */
     public static final class Versions {
+        /**
+         * Use snakeyaml to parse or generate YAML v1.1
+         */
         public static final String V1_1 = "v1.1";
+
+        /**
+         * Use snakeyaml-engine to parse or generate YAML v1.2
+         */
         public static final String V1_2 = "v1.2";
 
         private Versions() {
@@ -87,6 +94,24 @@ public final class Yaml {
         private Settings() {
         }
 
+        /**
+         * Explicitly set the YAML version used for parsing or generating YAML.
+         * This will determine which underlying YAML library to use.
+         * <p>
+         * This configuration setting may be omitted if only one YAML library is
+         * present on the class/module path.
+         *
+         * <ul>
+         * <li>{@link Versions#V1_1 V1_1} requires snakeyaml to be present on
+         * the class/module path
+         * <li>{@link Versions#V1_2 V1_2} requires snakeyaml-engine to be
+         * present on the class/module path
+         * </ul>
+         *
+         * @see Versions#V1_1
+         * @see Versions#V1_2
+         *
+         */
         public static final String YAML_VERSION = "io.xlate.yamljson.YAML_VERSION";
 
         /**
@@ -107,12 +132,18 @@ public final class Yaml {
         public static final String LOAD_USE_MARKS = "LOAD_USE_MARKS";
 
         /**
+         * Set to true if the document start must be explicitly indicated by adding
+         * {@code ---} at the beginning of the document.
+         *
          * @see org.yaml.snakeyaml.DumperOptions#setExplicitStart(boolean)
          * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitStart(boolean)
          */
         public static final String DUMP_EXPLICIT_START = "DUMP_EXPLICIT_START";
 
         /**
+         * Set to true if the document end must be explicitly indicated by
+         * adding {@code ...} at the end of the document.
+         *
          * @see org.yaml.snakeyaml.DumperOptions#setExplicitEnd(boolean)
          * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitEnd(boolean)
          */
