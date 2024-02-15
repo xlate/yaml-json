@@ -1,0 +1,8 @@
+key1: value1
+key2:
+ - - - ary1_1_1
+     - ary1_1_2
+     - ary1_1_3
+   - ary1_2
+   - ary1_3:
+       ary1_3_k1: ary1_3_v1

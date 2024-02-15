@@ -136,7 +136,7 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
             boolean containsSingleQuote = scalarValue.indexOf('\'') > -1;
 
             if (containsNewLine) {
-                // TODO Allow for folded scalar style via configuration
+                // XXX: Allow for folded scalar style via configuration
                 style = styleTypes.get(StyleType.LITERAL);
             } else if (containsDoubleQuote && containsSingleQuote) {
                 style = styleTypes.get(StyleType.LITERAL);
