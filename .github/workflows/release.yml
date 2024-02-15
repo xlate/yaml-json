@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: 17
+          java-version: 21
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
           server-username: OSSRH_USERNAME # env variable for username in deploy
           server-password: OSSRH_TOKEN # env variable for token in deploy
