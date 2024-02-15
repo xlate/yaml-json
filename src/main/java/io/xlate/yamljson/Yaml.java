@@ -30,6 +30,7 @@ import jakarta.json.JsonReader;
 import jakarta.json.JsonReaderFactory;
 import jakarta.json.JsonWriter;
 import jakarta.json.JsonWriterFactory;
+import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonGenerator;
 import jakarta.json.stream.JsonGeneratorFactory;
 import jakarta.json.stream.JsonParser;
@@ -123,7 +124,15 @@ public final class Yaml {
     private Yaml() {
     }
 
-    private static YamlProvider provider() {
+    /**
+     * Obtain the underlying YAML provider used by the other methods of this
+     * class. This may be useful in cases where a JsonProvider is needed.
+     * <p>
+     * Repeat calls to this method will return the same instance.
+     *
+     * @return a YAML provider implementation of the JsonProvider contract
+     */
+    public static JsonProvider provider() {
         return PROVIDER;
     }
 

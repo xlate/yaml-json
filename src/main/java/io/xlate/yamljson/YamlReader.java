@@ -15,25 +15,14 @@
  */
 package io.xlate.yamljson;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.LinkedList;
-
-import jakarta.json.Json;
 import jakarta.json.JsonArray;
-import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonStructure;
 import jakarta.json.JsonValue;
-import jakarta.json.spi.JsonProvider;
-import jakarta.json.stream.JsonParser;
-import jakarta.json.stream.JsonParser.Event;
 
 class YamlReader implements JsonReader {
 
-    final JsonProvider jsonProvider = JsonProvider.provider();
     final YamlParser<?, ?> parser;
     boolean readable = true;
 
@@ -93,126 +82,9 @@ class YamlReader implements JsonReader {
     @Override
     public JsonValue readValue() {
         assertReadable();
-
-        Deque<Object> builders = new ArrayDeque<>();
-        Deque<String> keyNames = new LinkedList<>();
-        Object rootBuilder = null;
-        String keyName = null;
-        JsonValue rootValue = null;
-
-        while (parser.hasNext()) {
-            Event event = parser.next();
-
-            switch (event) {
-            case KEY_NAME:
-                keyName = parser.getString();
-                break;
-            case START_ARRAY:
-                rootBuilder = beginStructure(builders, keyNames, keyName, Json.createArrayBuilder());
-                keyName = null;
-                break;
-            case START_OBJECT:
-                rootBuilder = beginStructure(builders, keyNames, keyName, Json.createObjectBuilder());
-                keyName = null;
-                break;
-            case END_ARRAY:
-            case END_OBJECT:
-                endStructure(builders, keyNames);
-                break;
-            case VALUE_FALSE:
-            case VALUE_NULL:
-            case VALUE_NUMBER:
-            case VALUE_STRING:
-            case VALUE_TRUE:
-                JsonValue parsedValue = getParsedValue(event, parser);
-
-                if (builders.isEmpty()) {
-                    rootValue = parsedValue;
-                } else {
-                    addValue(builders.peekLast(), keyName, parsedValue);
-                }
-
-                keyName = null;
-                break;
-
-            default:
-                break;
-            }
-        }
-
+        parser.next();
+        JsonValue value = parser.getValue();
         readable = false;
-
-        if (rootBuilder != null) {
-            rootValue = build(rootBuilder);
-        }
-
-        return rootValue;
-    }
-
-    Object beginStructure(Deque<Object> builders, Deque<String> keyNames, String keyName, Object builder) {
-        builders.add(builder);
-        keyNames.push(keyName);
-
-        return builders.peek();
-    }
-
-    void endStructure(Deque<Object> builders, Deque<String> keyNames) {
-        final Object completedStructure = builders.removeLast();
-
-        if (builders.isEmpty()) {
-            // Nothing to do, this is the top level builder
-        } else {
-            final String keyName = keyNames.pop();
-            final JsonValue value = build(completedStructure);
-            final Object parentBuilder = builders.peekLast();
-
-            addValue(parentBuilder, keyName, value);
-        }
-    }
-
-    JsonValue build(Object builder) {
-        final JsonValue value;
-
-        if (builder instanceof JsonObjectBuilder) {
-            value = ((JsonObjectBuilder) builder).build();
-        } else {
-            value = ((JsonArrayBuilder) builder).build();
-        }
-
         return value;
-    }
-
-    JsonValue getParsedValue(Event event, JsonParser parser) {
-        JsonValue value;
-
-        switch (event) {
-        case VALUE_TRUE:
-            value = JsonValue.TRUE;
-            break;
-        case VALUE_FALSE:
-            value = JsonValue.FALSE;
-            break;
-        case VALUE_NULL:
-            value = JsonValue.NULL;
-            break;
-        case VALUE_NUMBER:
-            value = jsonProvider.createValue(parser.getBigDecimal());
-            break;
-        case VALUE_STRING:
-            value = jsonProvider.createValue(parser.getString());
-            break;
-        default:
-            throw new IllegalStateException("Non-value event: " + event);
-        }
-
-        return value;
-    }
-
-    void addValue(Object builder, String keyName, JsonValue value) {
-        if (keyName != null) {
-            ((JsonObjectBuilder) builder).add(keyName, value);
-        } else {
-            ((JsonArrayBuilder) builder).add(value);
-        }
     }
 }

@@ -33,17 +33,20 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.util.Map;
 
+import jakarta.json.Json;
+import jakarta.json.JsonArray;
+import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.json.stream.JsonLocation;
+import jakarta.json.stream.JsonParser;
+import jakarta.json.stream.JsonParser.Event;
+import jakarta.json.stream.JsonParsingException;
+
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
-
-import jakarta.json.JsonException;
-import jakarta.json.stream.JsonLocation;
-import jakarta.json.stream.JsonParser;
-import jakarta.json.stream.JsonParser.Event;
-import jakarta.json.stream.JsonParsingException;
 
 @DisabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
 class YamlParserTest {
@@ -283,5 +286,200 @@ class YamlParserTest {
         }
 
         assertEquals("Alias 'lol4' expands to too many scalars: 10000", thrown.getMessage());
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testGetObject(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+            assertEquals(Event.START_OBJECT, parser.next());
+            JsonObject value = parser.getObject();
+            assertEquals(Json.createObjectBuilder()
+                .add("key1", "value1")
+                .add("key2", Json.createArrayBuilder()
+                    .add(Json.createArrayBuilder()
+                        .add(Json.createArrayBuilder()
+                            .add("ary1_1_1")
+                            .add("ary1_1_2")
+                            .add("ary1_1_3")
+                        )
+                        .add("ary1_2")
+                        .add(Json.createObjectBuilder()
+                            .add("ary1_3", Json.createObjectBuilder()
+                                .add("ary1_3_k1", "ary1_3_v1")))
+                    )
+                )
+                .build(),
+                value);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testGetObjectWithInvalidContext(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+            assertThrows(IllegalStateException.class, () -> parser.getObject());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSkipObjectEntirely(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+            assertEquals(Event.START_OBJECT, parser.next());
+            parser.skipObject();
+            assertEquals(Event.END_OBJECT, parser.currentEvent());
+            assertFalse(parser.hasNext());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSkipObjectFromFirstValue(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+            assertEquals(Event.START_OBJECT, parser.next());
+            assertEquals(Event.KEY_NAME, parser.next());
+            assertEquals(Event.VALUE_STRING, parser.next());
+
+            parser.skipObject();
+            assertEquals(Event.END_OBJECT, parser.currentEvent());
+            assertFalse(parser.hasNext());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSkipObjectWithoutObjectContext(String version) throws IOException {
+        try (InputStream source = new ByteArrayInputStream(String.format("---%n- entry1%n- entry2%n- entry3%n").getBytes());
+             JsonParser parser = createParser(version, source)) {
+            assertEquals(Event.START_ARRAY, parser.next());
+            parser.skipObject();
+            assertEquals(Event.START_ARRAY, parser.currentEvent());
+            assertEquals(Event.VALUE_STRING, parser.next());
+            assertEquals("entry1", parser.getString());
+            parser.skipObject();
+            assertEquals(Event.VALUE_STRING, parser.next());
+            assertEquals("entry2", parser.getString());
+            parser.skipObject();
+            assertEquals(Event.VALUE_STRING, parser.next());
+            assertEquals("entry3", parser.getString());
+            parser.skipObject();
+            assertEquals(Event.END_ARRAY, parser.next());
+            parser.skipObject();
+            assertEquals(Event.END_ARRAY, parser.currentEvent());
+            assertFalse(parser.hasNext());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSkipObjectFromNestedMap(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+            boolean conditionMet = false;
+            while (parser.hasNext()) {
+                if (parser.next() == Event.KEY_NAME && "ary1_3_k1".equals(parser.getString())) {
+                    conditionMet = true;
+                    parser.skipObject();
+                    assertEquals(Event.END_OBJECT, parser.currentEvent());
+                    assertEquals(Event.END_OBJECT, parser.next());
+                    assertEquals(Event.END_ARRAY, parser.next());
+                    assertEquals(Event.END_ARRAY, parser.next());
+                    assertEquals(Event.END_OBJECT, parser.next());
+                    assertFalse(parser.hasNext());
+                    break;
+                }
+            }
+            assertTrue(conditionMet);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testGetArray(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+
+            assertEquals(Event.START_OBJECT, parser.next());
+
+            assertEquals(Event.KEY_NAME, parser.next());
+            assertEquals(Event.VALUE_STRING, parser.next());
+
+            assertEquals(Event.KEY_NAME, parser.next());
+            assertEquals(Event.START_ARRAY, parser.next());
+
+            JsonArray value = parser.getArray();
+            assertEquals(Json.createArrayBuilder()
+                .add(Json.createArrayBuilder()
+                    .add(Json.createArrayBuilder()
+                        .add("ary1_1_1")
+                        .add("ary1_1_2")
+                        .add("ary1_1_3")
+                    )
+                    .add("ary1_2")
+                    .add(Json.createObjectBuilder()
+                        .add("ary1_3", Json.createObjectBuilder()
+                            .add("ary1_3_k1", "ary1_3_v1")))
+                )
+                .build(),
+                value);
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testGetArrayWithInvalidContext(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+            assertThrows(IllegalStateException.class, () -> parser.getArray());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testGetValueKeyName(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+
+            assertEquals(Event.START_OBJECT, parser.next());
+
+            assertEquals(Event.KEY_NAME, parser.next());
+            assertEquals(Json.createValue("key1"), parser.getValue());
+            assertEquals(Event.VALUE_STRING, parser.next());
+
+            assertEquals(Event.KEY_NAME, parser.next());
+            assertEquals(Json.createValue("key2"), parser.getValue());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSkipArrayFromNestedSequence(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
+             JsonParser parser = createParser(version, source)) {
+            boolean conditionMet = false;
+            while (parser.hasNext()) {
+                if (parser.next() == Event.VALUE_STRING && "ary1_1_2".equals(parser.getString())) {
+                    conditionMet = true;
+                    parser.skipArray();
+                    assertEquals(Event.END_ARRAY, parser.currentEvent());
+
+                    parser.skipArray();
+                    assertEquals(Event.END_ARRAY, parser.currentEvent());
+
+                    parser.skipArray();
+                    assertEquals(Event.END_ARRAY, parser.currentEvent());
+
+                    assertEquals(Event.END_OBJECT, parser.next());
+                    assertFalse(parser.hasNext());
+                    break;
+                }
+            }
+            assertTrue(conditionMet);
+        }
     }
 }

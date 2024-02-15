@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -32,7 +33,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import jakarta.json.JsonArray;
+import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonException;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonValue;
+import jakarta.json.spi.JsonProvider;
 import jakarta.json.stream.JsonLocation;
 import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParsingException;
@@ -81,6 +88,7 @@ abstract class YamlParser<E, M> implements JsonParser {
     static final BigDecimal UNSET_NUMBER = new BigDecimal(0);
     static final YamlLocation UNKNOWN_LOCATION = new YamlLocation(-1, -1, -1);
 
+    final JsonProvider jsonProvider = JsonProvider.provider();
     final Reader yamlSource;
     final Iterator<E> yamlEvents;
     final Map<String, ?> properties;
@@ -103,6 +111,7 @@ abstract class YamlParser<E, M> implements JsonParser {
     BigDecimal currentNumber;
 
     final Boolean[] valueIsKey = new Boolean[200];
+    final List<Event> eventStack = new ArrayList<>();
     int depth = -1;
     final Deque<AnchorMetadata> anchorStack = new ArrayDeque<>();
 
@@ -456,16 +465,18 @@ abstract class YamlParser<E, M> implements JsonParser {
         return depth > -1 ? this.valueIsKey[depth] : null;
     }
 
-    void incrementDepth(Boolean keyExpected) {
+    void incrementDepth(Event levelEvent, Boolean keyExpected) {
         if (isKeyExpected() != null) {
             this.valueIsKey[depth] = Boolean.TRUE;
         }
 
         depth++;
         this.valueIsKey[depth] = keyExpected;
+        eventStack.add(depth, levelEvent);
     }
 
     void decrementDepth() {
+        eventStack.remove(depth);
         depth--;
     }
 
@@ -501,7 +512,7 @@ abstract class YamlParser<E, M> implements JsonParser {
 
         case "SequenceStart":
             addAnchorMetadata(getAnchor(yamlEvent));
-            incrementDepth(null);
+            incrementDepth(Event.START_ARRAY, null);
             enqueue(yamlEvent, Event.START_ARRAY, NumberType.NONE, "", UNSET_NUMBER);
             break;
 
@@ -513,7 +524,7 @@ abstract class YamlParser<E, M> implements JsonParser {
 
         case "MappingStart":
             addAnchorMetadata(getAnchor(yamlEvent));
-            incrementDepth(Boolean.TRUE);
+            incrementDepth(Event.START_OBJECT, Boolean.TRUE);
             enqueue(yamlEvent, Event.START_OBJECT, NumberType.NONE, "", UNSET_NUMBER);
             break;
 
@@ -635,6 +646,12 @@ abstract class YamlParser<E, M> implements JsonParser {
         return currentEvent;
     }
 
+    // XXX: Add @Override annotation when dropping support for old javax interfaces
+    @SuppressWarnings("java:S1161")
+    public Event currentEvent() {
+        return currentEvent;
+    }
+
     @Override
     public void close() {
         try {
@@ -708,6 +725,213 @@ abstract class YamlParser<E, M> implements JsonParser {
         }
 
         return location;
+    }
+
+    @Override
+    public JsonValue getValue() {
+        return getJsonValue(null);
+    }
+
+    @Override
+    public JsonObject getObject() {
+        return (JsonObject) getJsonValue(Event.START_OBJECT);
+    }
+
+    @Override
+    public void skipObject() {
+        skip(Event.START_OBJECT);
+    }
+
+    @Override
+    public JsonArray getArray() {
+        return (JsonArray) getJsonValue(Event.START_ARRAY);
+    }
+
+    @Override
+    public void skipArray() {
+        skip(Event.START_ARRAY);
+    }
+
+    JsonValue getJsonValue(Event requiredEvent) {
+        Event event = currentEvent();
+
+        if (requiredEvent != null && event != requiredEvent) {
+            throw new IllegalStateException("Expected current state to be " + requiredEvent + ", but got [" + currentEvent() + ']');
+        }
+
+        Deque<Object> builders = new ArrayDeque<>();
+        Deque<String> keyNames = new LinkedList<>();
+        Object rootBuilder = null;
+        String keyName = null;
+        JsonValue rootValue = null;
+        int valueDepth = 0;
+        int iteration = 0;
+
+        do {
+            event = currentOrNextEvent(iteration++, event);
+
+            switch (event) {
+            case KEY_NAME:
+                keyName = getString();
+                break;
+            case START_ARRAY:
+                rootBuilder = beginStructure(builders, keyNames, keyName, jsonProvider.createArrayBuilder());
+                keyName = null;
+                valueDepth++;
+                break;
+            case START_OBJECT:
+                rootBuilder = beginStructure(builders, keyNames, keyName, jsonProvider.createObjectBuilder());
+                keyName = null;
+                valueDepth++;
+                break;
+            case END_ARRAY:
+            case END_OBJECT:
+                endStructure(builders, keyNames);
+                valueDepth--;
+                break;
+            default:
+                JsonValue parsedValue = getParsedValue(event);
+
+                if (builders.isEmpty()) {
+                    rootValue = parsedValue;
+                } else {
+                    addValue(builders.peekLast(), keyName, parsedValue);
+                }
+
+                keyName = null;
+                break;
+            }
+        } while (valueDepth > 0);
+
+        if (rootBuilder != null) {
+            rootValue = build(rootBuilder);
+        } else if (rootValue == null) {
+            // method was called at KEY_NAME
+            Objects.requireNonNull(keyName, "Expected value for KEY_NAME, but it was null");
+            rootValue = jsonProvider.createValue(keyName);
+        }
+
+        return rootValue;
+    }
+
+    void skip(Event structuralEvent) {
+        final int terminalDepth = eventStack.lastIndexOf(structuralEvent);
+
+        if (terminalDepth < 0) {
+            return;
+        }
+
+        Event event = currentEvent();
+        int valueDepth;
+        int iteration = 0;
+
+        /*
+         * Accounting for the fact that `depth` was already modified for start/end structure events
+         * and adjusting for the first pass through the loop.
+         */
+        switch (event) {
+        case START_ARRAY:
+        case START_OBJECT:
+            valueDepth = depth - 1;
+            break;
+        case END_ARRAY:
+        case END_OBJECT:
+            valueDepth = depth + 1;
+            break;
+        default:
+            valueDepth = depth;
+            break;
+        }
+
+        do {
+            event = currentOrNextEvent(iteration++, event);
+
+            switch (event) {
+            case START_ARRAY:
+            case START_OBJECT:
+                valueDepth++;
+                break;
+
+            case END_ARRAY:
+            case END_OBJECT:
+                valueDepth--;
+                break;
+
+            default:
+                break;
+            }
+        } while (valueDepth >= terminalDepth);
+    }
+
+    Event currentOrNextEvent(int iteration, Event event) {
+        return iteration > 0 ? next() : event;
+    }
+
+    Object beginStructure(Deque<Object> builders, Deque<String> keyNames, String keyName, Object builder) {
+        builders.add(builder);
+        keyNames.push(keyName);
+
+        return builders.peek();
+    }
+
+    void endStructure(Deque<Object> builders, Deque<String> keyNames) {
+        final Object completedStructure = builders.removeLast();
+
+        if (builders.isEmpty()) {
+            // Nothing to do, this is the top level builder
+        } else {
+            final String keyName = keyNames.pop();
+            final JsonValue value = build(completedStructure);
+            final Object parentBuilder = builders.peekLast();
+
+            addValue(parentBuilder, keyName, value);
+        }
+    }
+
+    JsonValue build(Object builder) {
+        final JsonValue value;
+
+        if (builder instanceof JsonObjectBuilder) {
+            value = ((JsonObjectBuilder) builder).build();
+        } else {
+            value = ((JsonArrayBuilder) builder).build();
+        }
+
+        return value;
+    }
+
+    JsonValue getParsedValue(Event event) {
+        JsonValue value;
+
+        switch (event) {
+        case VALUE_TRUE:
+            value = JsonValue.TRUE;
+            break;
+        case VALUE_FALSE:
+            value = JsonValue.FALSE;
+            break;
+        case VALUE_NULL:
+            value = JsonValue.NULL;
+            break;
+        case VALUE_NUMBER:
+            value = jsonProvider.createValue(getBigDecimal());
+            break;
+        case VALUE_STRING:
+            value = jsonProvider.createValue(getString());
+            break;
+        default:
+            throw new IllegalStateException("Non-value event: " + event);
+        }
+
+        return value;
+    }
+
+    void addValue(Object builder, String keyName, JsonValue value) {
+        if (keyName != null) {
+            ((JsonObjectBuilder) builder).add(keyName, value);
+        } else {
+            ((JsonArrayBuilder) builder).add(value);
+        }
     }
 
     protected abstract M getMark(E event);
