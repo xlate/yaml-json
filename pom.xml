@@ -119,6 +119,7 @@
               <link>https://docs.oracle.com/en/java/javase/11/docs/api</link>
               <link>https://jakarta.ee/specifications/platform/9/apidocs</link>
               <link>https://javadoc.io/doc/org.snakeyaml/snakeyaml-engine/${version.snakeyaml-engine}/</link>
+              <link>https://javadoc.io/doc/org.yaml/snakeyaml/${version.snakeyaml}/</link>
             </links>
           </configuration>
         </plugin>
@@ -351,7 +352,7 @@
                 </configuration>
               </execution>
               <execution>
-                <id>compile-legacy</id>
+                <id>legacy-compile</id>
                 <phase>compile</phase>
                 <goals>
                   <goal>run</goal>
