@@ -482,4 +482,50 @@ class YamlParserTest {
             assertTrue(conditionMet);
         }
     }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testMergeKeyWithOverrides(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/merge-key.yaml");
+             JsonParser parser = createParser(version, source)) {
+            parser.next();
+            JsonObject value = parser.getObject();
+            assertEquals(
+                Json.createObjectBuilder()
+                    .add("key1", "value1")
+                    .add("key2", Json.createObjectBuilder()
+                        .add("key2_1", "value2_1")
+                        .add("key2_2", "value2_2")
+                        .add("key2_3", "value2_3")
+                    )
+                    .add("key3", "value3")
+                    .add("key4", Json.createObjectBuilder()
+                        .add("key2_1", "value2_1")
+                        .add("key2_2", "value2_2")
+                        .add("key2_3", "value2_3_override_by_key4")
+                        .add("key4_1", "value4_1")
+                    )
+                    .add("key5", Json.createObjectBuilder()
+                        .add("key2_1", "value2_1")
+                        .add("key2_2", "value2_2")
+                        .add("key2_3", "value2_3_override_by_key4")
+                        .add("key4_1", "value4_1_override_by_key5")
+                        .add("key5_1", "value5_1")
+                    )
+                    .build(),
+                value
+            );
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testMergeKeyWithInvalidSequenceAlias(String version) throws IOException {
+        try (InputStream source = getClass().getResourceAsStream("/merge-key-invalid.yaml");
+                JsonParser parser = createParser(version, source)) {
+            parser.next();
+            Throwable thrown = assertThrows(JsonParsingException.class, () -> parser.getObject());
+            assertTrue(thrown.getMessage().contains("Unable to expand merge key (<<)"));
+        }
+    }
 }

@@ -71,8 +71,23 @@ abstract class YamlParser<E, M> implements JsonParser {
 
     private static final Logger LOGGER = Logger.getLogger(YamlParser.class.getName());
 
+    static final String MERGE_KEY = "<<";
+    static final String STREAM_START = "StreamStart";
+    static final String STREAM_END = "StreamEnd";
+    static final String DOCUMENT_START = "DocumentStart";
+    static final String DOCUMENT_END = "DocumentEnd";
+    static final String MAPPING_START = "MappingStart";
+    static final String MAPPING_END = "MappingEnd";
+    static final String SEQUENCE_START = "SequenceStart";
+    static final String SEQUENCE_END = "SequenceEnd";
+    static final String SCALAR = "Scalar";
+    static final String ALIAS = "Alias";
+    static final String COMMENT = "Comment";
+
+    static final List<String> MAPPING_BOUNDARIES = List.of(MAPPING_START, MAPPING_END);
     static final String MSG_EXCEPTION = "Exception reading the YAML stream as JSON";
     static final String MSG_UNEXPECTED = "Unexpected jsonEvent reached parsing YAML: ";
+    static final String MSG_INVALID_MERGE_ALIAS = "Unable to expand merge key (<<). Alias '%s' must reference a YAML mapping, but found %s/%s";
 
     // Support all the values from the Core Schema (https://yaml.org/spec/1.2/spec.html#id2804923)
     static final Set<String> VALUES_NULL = Set.of("null", "Null", "NULL", "~");
@@ -112,6 +127,7 @@ abstract class YamlParser<E, M> implements JsonParser {
 
     final Boolean[] valueIsKey = new Boolean[200];
     final List<Event> eventStack = new ArrayList<>();
+    final List<Boolean> mapMerge = new ArrayList<>();
     int depth = -1;
     final Deque<AnchorMetadata> anchorStack = new ArrayDeque<>();
 
@@ -178,8 +194,24 @@ abstract class YamlParser<E, M> implements JsonParser {
         if (alias != null) {
             Event jsonEventOverride = currentEvent != Event.VALUE_NULL ? currentEvent : null;
             List<AnchoredEvent<E>> events = anchoredEvents.get(alias);
+
+            if (Boolean.TRUE.equals(mapMerge.get(depth))) {
+                String firstEvent = getEventId(events.get(0).yamlEvent);
+                String finalEvent = getEventId(events.get(events.size() - 1).yamlEvent);
+
+                if (List.of(firstEvent, finalEvent).equals(MAPPING_BOUNDARIES)) {
+                    events = events.subList(1, events.size() - 1);
+                } else {
+                    String message = String.format(MSG_INVALID_MERGE_ALIAS, alias, firstEvent, finalEvent);
+                    throw new JsonParsingException(message, getLocation(currentYamlEvent));
+                }
+            }
+
             ListIterator<AnchoredEvent<E>> iterator = events.listIterator(events.size());
 
+            /*
+             * Reverse iteration and add each event to the front of the queue.
+             **/
             while (iterator.hasPrevious()) {
                 enqueue(iterator.previous(), jsonEventOverride);
             }
@@ -394,10 +426,14 @@ abstract class YamlParser<E, M> implements JsonParser {
         }
     }
 
-    void enqueueDataElement(E yamlEvent, Boolean needKeyName) {
+    boolean enqueueDataElement(E yamlEvent, Boolean needKeyName) {
         final String dataText = getValue(yamlEvent);
 
         if (Boolean.TRUE.equals(needKeyName)) {
+            if (MERGE_KEY.equals(dataText)) {
+                mapMerge.set(depth, true);
+                return false;
+            }
             enqueueString(yamlEvent, Event.KEY_NAME, dataText);
         } else if (isPlain(yamlEvent)) {
             if (dataText.isEmpty()) {
@@ -408,6 +444,8 @@ abstract class YamlParser<E, M> implements JsonParser {
         } else {
             enqueueString(yamlEvent, Event.VALUE_STRING, dataText);
         }
+
+        return true;
     }
 
     void enqueueAlias(E yamlEvent, Boolean needKeyName) {
@@ -449,7 +487,7 @@ abstract class YamlParser<E, M> implements JsonParser {
 
             if (nestedAlias != null) {
                 count += countExpansion(nestedAlias, limit);
-            } else if ("Scalar".equals(getEventId(event.yamlEvent))) {
+            } else if (SCALAR.equals(getEventId(event.yamlEvent))) {
                 count++;
             }
 
@@ -473,10 +511,12 @@ abstract class YamlParser<E, M> implements JsonParser {
         depth++;
         this.valueIsKey[depth] = keyExpected;
         eventStack.add(depth, levelEvent);
+        mapMerge.add(depth, false);
     }
 
     void decrementDepth() {
         eventStack.remove(depth);
+        mapMerge.remove(depth);
         depth--;
     }
 
@@ -505,39 +545,39 @@ abstract class YamlParser<E, M> implements JsonParser {
         String eventId = getEventId(yamlEvent);
 
         switch (eventId) {
-        case "DocumentStart":
-        case "DocumentEnd":
+        case DOCUMENT_START:
+        case DOCUMENT_END:
             eventFound = false;
             break;
 
-        case "SequenceStart":
+        case SEQUENCE_START:
             addAnchorMetadata(getAnchor(yamlEvent));
             incrementDepth(Event.START_ARRAY, null);
             enqueue(yamlEvent, Event.START_ARRAY, NumberType.NONE, "", UNSET_NUMBER);
             break;
 
-        case "SequenceEnd":
+        case SEQUENCE_END:
             enqueue(yamlEvent, Event.END_ARRAY, NumberType.NONE, "", UNSET_NUMBER);
             decrementDepth();
             removeAnchorMetadata(yamlEvent, Event.END_ARRAY);
             break;
 
-        case "MappingStart":
+        case MAPPING_START:
             addAnchorMetadata(getAnchor(yamlEvent));
             incrementDepth(Event.START_OBJECT, Boolean.TRUE);
             enqueue(yamlEvent, Event.START_OBJECT, NumberType.NONE, "", UNSET_NUMBER);
             break;
 
-        case "MappingEnd":
+        case MAPPING_END:
             enqueue(yamlEvent, Event.END_OBJECT, NumberType.NONE, "", UNSET_NUMBER);
             decrementDepth();
             removeAnchorMetadata(yamlEvent, Event.END_OBJECT);
             break;
 
-        case "Scalar": {
+        case SCALAR: {
             addAnchorMetadata(getAnchor(yamlEvent));
             Boolean keyExpected = isKeyExpected();
-            enqueueDataElement(yamlEvent, keyExpected);
+            eventFound = enqueueDataElement(yamlEvent, keyExpected);
 
             if (keyExpected != null) {
                 this.valueIsKey[depth] = Boolean.valueOf(!keyExpected);
@@ -546,7 +586,7 @@ abstract class YamlParser<E, M> implements JsonParser {
             break;
         }
 
-        case "Alias": {
+        case ALIAS: {
             Boolean keyExpected = isKeyExpected();
 
             enqueueAlias(yamlEvent, keyExpected);
@@ -559,8 +599,8 @@ abstract class YamlParser<E, M> implements JsonParser {
             break;
         }
 
-        case "StreamStart":
-        case "StreamEnd":
+        case STREAM_START:
+        case STREAM_END:
             eventFound = false;
             break;
         default:
