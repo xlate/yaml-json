@@ -22,6 +22,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import jakarta.json.stream.JsonGenerator;
+
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.DumperOptions.FlowStyle;
 import org.yaml.snakeyaml.DumperOptions.ScalarStyle;
@@ -38,22 +40,20 @@ import org.yaml.snakeyaml.events.SequenceStartEvent;
 import org.yaml.snakeyaml.events.StreamEndEvent;
 import org.yaml.snakeyaml.events.StreamStartEvent;
 
-import jakarta.json.stream.JsonGenerator;
-
 class SnakeYamlGenerator extends YamlGenerator<Event, ScalarStyle> implements JsonGenerator {
 
     static final ImplicitTuple omitTags = new ImplicitTuple(true, true);
 
     static final Map<EventType, Event> EVENTS = new EnumMap<>(EventType.class);
     static final Map<StyleType, ScalarStyle> STYLES = new EnumMap<>(StyleType.class);
+    static final Event DOCUMENT_START_DEFAULT = new DocumentStartEvent(null, null, false, null, Collections.emptyMap());
+    static final Event DOCUMENT_START_EXPLICIT = new DocumentStartEvent(null, null, true, null, Collections.emptyMap());
+    static final Event DOCUMENT_END_DEFAULT = new DocumentEndEvent(null, null, false);
+    static final Event DOCUMENT_END_EXPLICIT = new DocumentEndEvent(null, null, true);
 
     static {
         EVENTS.put(EventType.STREAM_START, new StreamStartEvent(null, null));
         EVENTS.put(EventType.STREAM_END, new StreamEndEvent(null, null));
-        EVENTS.put(EventType.DOCUMENT_START_DEFAULT, new DocumentStartEvent(null, null, false, null, Collections.emptyMap()));
-        EVENTS.put(EventType.DOCUMENT_START_EXPLICIT, new DocumentStartEvent(null, null, true, null, Collections.emptyMap()));
-        EVENTS.put(EventType.DOCUMENT_END_DEFAULT, new DocumentEndEvent(null, null, false));
-        EVENTS.put(EventType.DOCUMENT_END_EXPLICIT, new DocumentEndEvent(null, null, true));
         EVENTS.put(EventType.MAPPING_START, new MappingStartEvent(null, null, true, null, null, FlowStyle.AUTO));
         EVENTS.put(EventType.MAPPING_END, new MappingEndEvent(null, null));
         EVENTS.put(EventType.SEQUENCE_START, new SequenceStartEvent(null, null, true, null, null, FlowStyle.AUTO));
@@ -66,9 +66,21 @@ class SnakeYamlGenerator extends YamlGenerator<Event, ScalarStyle> implements Js
     final Emitter emitter;
 
     SnakeYamlGenerator(DumperOptions settings, Writer writer) {
-        super(EVENTS, STYLES, writer, settings.isExplicitStart(), settings.isExplicitEnd());
+        super(STYLES, writer);
         this.settings = settings;
         this.emitter = new Emitter(writer, settings);
+    }
+
+    @Override
+    protected Event getEvent(EventType type) {
+        switch (type) {
+        case DOCUMENT_START:
+            return settings.isExplicitStart() ? DOCUMENT_START_EXPLICIT : DOCUMENT_START_DEFAULT;
+        case DOCUMENT_END:
+            return settings.isExplicitEnd() ? DOCUMENT_END_EXPLICIT : DOCUMENT_END_DEFAULT;
+        default:
+            return EVENTS.get(type);
+        }
     }
 
     @Override

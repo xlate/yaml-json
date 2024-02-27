@@ -48,14 +48,14 @@ class SnakeYamlEngineGenerator extends YamlGenerator<Event, ScalarStyle> impleme
 
     static final Map<EventType, Event> EVENTS = new EnumMap<>(EventType.class);
     static final Map<StyleType, ScalarStyle> STYLES = new EnumMap<>(StyleType.class);
+    static final Event DOCUMENT_START_DEFAULT = new DocumentStartEvent(false, Optional.empty(), Collections.emptyMap());
+    static final Event DOCUMENT_START_EXPLICIT = new DocumentStartEvent(true, Optional.empty(), Collections.emptyMap());
+    static final Event DOCUMENT_END_DEFAULT = new DocumentEndEvent(false);
+    static final Event DOCUMENT_END_EXPLICIT = new DocumentEndEvent(true);
 
     static {
         EVENTS.put(EventType.STREAM_START, new StreamStartEvent());
         EVENTS.put(EventType.STREAM_END, new StreamEndEvent());
-        EVENTS.put(EventType.DOCUMENT_START_DEFAULT, new DocumentStartEvent(false, Optional.empty(), Collections.emptyMap()));
-        EVENTS.put(EventType.DOCUMENT_START_EXPLICIT, new DocumentStartEvent(true, Optional.empty(), Collections.emptyMap()));
-        EVENTS.put(EventType.DOCUMENT_END_DEFAULT, new DocumentEndEvent(false));
-        EVENTS.put(EventType.DOCUMENT_END_EXPLICIT, new DocumentEndEvent(true));
         EVENTS.put(EventType.MAPPING_START, new MappingStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO));
         EVENTS.put(EventType.MAPPING_END, new MappingEndEvent());
         EVENTS.put(EventType.SEQUENCE_START, new SequenceStartEvent(Optional.empty(), Optional.empty(), true, FlowStyle.AUTO));
@@ -68,13 +68,25 @@ class SnakeYamlEngineGenerator extends YamlGenerator<Event, ScalarStyle> impleme
     final Emitter emitter;
 
     SnakeYamlEngineGenerator(DumpSettings settings, YamlWriterStream writer) {
-        super(EVENTS, STYLES, writer, settings.isExplicitStart(), settings.isExplicitEnd());
+        super(STYLES, writer);
         this.settings = settings;
         this.emitter = new Emitter(settings, writer);
     }
 
     SnakeYamlEngineGenerator(DumpSettings settings, Writer writer) {
         this(settings, new YamlWriterStream(writer));
+    }
+
+    @Override
+    protected Event getEvent(EventType type) {
+        switch (type) {
+        case DOCUMENT_START:
+            return settings.isExplicitStart() ? DOCUMENT_START_EXPLICIT : DOCUMENT_START_DEFAULT;
+        case DOCUMENT_END:
+            return settings.isExplicitEnd() ? DOCUMENT_END_EXPLICIT : DOCUMENT_END_DEFAULT;
+        default:
+            return EVENTS.get(type);
+        }
     }
 
     @Override

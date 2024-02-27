@@ -44,15 +44,24 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
     static final Function<Map<String, Object>, Object> SNAKEYAML_FACTORY =
             // No load properties supported currently
-            props -> new org.yaml.snakeyaml.Yaml(new LoaderOptions());
+            props -> new org.yaml.snakeyaml.Yaml(buildLoaderOptions(props));
 
     static final Function<Map<String, Object>, Object> SNAKEYAML_ENGINE_FACTORY =
             props -> new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(props));
 
+    static LoaderOptions buildLoaderOptions(Map<String, Object> properties) {
+        return Optional.ofNullable(properties.get(Yaml.Settings.LOAD_CONFIG))
+                .map(LoaderOptions.class::cast)
+                .orElseGet(LoaderOptions::new);
+    }
+
+    @SuppressWarnings("removal")
     static LoadSettings buildLoadSettings(Map<String, Object> properties) {
-        return LoadSettings.builder()
-            .setUseMarks(getProperty(properties, Yaml.Settings.LOAD_USE_MARKS, Boolean::valueOf, true))
-            .build();
+        return Optional.ofNullable(properties.get(Yaml.Settings.LOAD_CONFIG))
+                .map(LoadSettings.class::cast)
+                .orElseGet(() -> LoadSettings.builder()
+                        .setUseMarks(getProperty(properties, Yaml.Settings.LOAD_USE_MARKS, Boolean::valueOf, true))
+                        .build());
     }
 
     private final Map<String, Object> properties;

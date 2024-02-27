@@ -43,10 +43,8 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
     enum EventType {
         STREAM_START,
         STREAM_END,
-        DOCUMENT_START_DEFAULT,
-        DOCUMENT_START_EXPLICIT,
-        DOCUMENT_END_DEFAULT,
-        DOCUMENT_END_EXPLICIT,
+        DOCUMENT_START,
+        DOCUMENT_END,
         MAPPING_START,
         MAPPING_END,
         SEQUENCE_START,
@@ -73,30 +71,23 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
 
     static final StringQuotingChecker quoteChecker = new StringQuotingChecker();
 
-    protected final Map<EventType, E> eventTypes;
     protected final Map<StyleType, S> styleTypes;
     protected final Writer writer;
-    final boolean explicitStart;
-    final boolean explicitEnd;
     final Deque<ContextType> context = new ArrayDeque<>();
 
-    YamlGenerator(Map<EventType, E> eventTypes, Map<StyleType, S> styleTypes, Writer writer, boolean explicitStart, boolean explicitEnd) {
-        this.eventTypes = eventTypes;
+    YamlGenerator(Map<StyleType, S> styleTypes, Writer writer) {
         this.styleTypes = styleTypes;
         this.writer = writer;
-        this.explicitStart = explicitStart;
-        this.explicitEnd = explicitEnd;
     }
 
+    protected abstract E getEvent(EventType type);
     protected abstract void emitEvent(E event) throws IOException;
     protected abstract E buildScalarEvent(String scalarValue, S style);
 
     void ensureDocumentStarted() {
         if (context.isEmpty()) {
-            emit(eventTypes.get(EventType.STREAM_START));
-            emit(explicitStart ?
-                eventTypes.get(EventType.DOCUMENT_START_EXPLICIT) :
-                    eventTypes.get(EventType.DOCUMENT_START_DEFAULT));
+            emit(getEvent(EventType.STREAM_START));
+            emit(getEvent(EventType.DOCUMENT_START));
         }
     }
 
@@ -168,7 +159,7 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
     public JsonGenerator writeStartObject() {
         ensureDocumentStarted();
         context.push(ContextType.OBJECT);
-        emit(eventTypes.get(EventType.MAPPING_START));
+        emit(getEvent(EventType.MAPPING_START));
         return this;
     }
 
@@ -177,7 +168,7 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         Objects.requireNonNull(name, "name");
         writeKey(name);
         context.push(ContextType.OBJECT);
-        emit(eventTypes.get(EventType.MAPPING_START));
+        emit(getEvent(EventType.MAPPING_START));
         return this;
     }
 
@@ -193,7 +184,7 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
     public JsonGenerator writeStartArray() {
         ensureDocumentStarted();
         context.push(ContextType.ARRAY);
-        emit(eventTypes.get(EventType.SEQUENCE_START));
+        emit(getEvent(EventType.SEQUENCE_START));
         return this;
     }
 
@@ -202,7 +193,7 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         Objects.requireNonNull(name, "name");
         writeKey(name);
         context.push(ContextType.ARRAY);
-        emit(eventTypes.get(EventType.SEQUENCE_START));
+        emit(getEvent(EventType.SEQUENCE_START));
         return this;
     }
 
@@ -269,16 +260,14 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
         ContextType contextType = this.context.pop();
 
         if (contextType == ContextType.OBJECT) {
-            emit(eventTypes.get(EventType.MAPPING_END));
+            emit(getEvent(EventType.MAPPING_END));
         } else {
-            emit(eventTypes.get(EventType.SEQUENCE_END));
+            emit(getEvent(EventType.SEQUENCE_END));
         }
 
         if (this.context.isEmpty()) {
-            emit(explicitEnd ?
-                eventTypes.get(EventType.DOCUMENT_END_EXPLICIT) :
-                    eventTypes.get(EventType.DOCUMENT_END_DEFAULT));
-            emit(eventTypes.get(EventType.STREAM_END));
+            emit(getEvent(EventType.DOCUMENT_END));
+            emit(getEvent(EventType.STREAM_END));
         }
 
         return this;
