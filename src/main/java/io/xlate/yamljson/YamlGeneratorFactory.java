@@ -52,18 +52,28 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
         target.accept(getProperty(properties, name, Boolean::valueOf, false));
     }
 
+    @SuppressWarnings("removal")
     static DumperOptions buildDumperOptions(Map<String, Object> properties) {
-        DumperOptions options = new DumperOptions();
-        copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, options::setExplicitStart);
-        copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, options::setExplicitEnd);
-        return options;
+        return Optional.ofNullable(properties.get(Yaml.Settings.DUMP_CONFIG))
+                .map(DumperOptions.class::cast)
+                .orElseGet(() -> {
+                    DumperOptions options = new DumperOptions();
+                    copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, options::setExplicitStart);
+                    copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, options::setExplicitEnd);
+                    return options;
+                });
     }
 
+    @SuppressWarnings("removal")
     static DumpSettings buildDumpSettings(Map<String, Object> properties) {
-        DumpSettingsBuilder settings = DumpSettings.builder();
-        copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, settings::setExplicitStart);
-        copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, settings::setExplicitEnd);
-        return settings.build();
+        return Optional.ofNullable(properties.get(Yaml.Settings.DUMP_CONFIG))
+                .map(DumpSettings.class::cast)
+                .orElseGet(() -> {
+                    DumpSettingsBuilder settings = DumpSettings.builder();
+                    copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_START, settings::setExplicitStart);
+                    copyBoolean(properties, Yaml.Settings.DUMP_EXPLICIT_END, settings::setExplicitEnd);
+                    return settings.build();
+                });
     }
 
     private final Map<String, Object> properties;

@@ -29,6 +29,8 @@ import java.util.Map;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.snakeyaml.engine.v2.api.DumpSettings;
+import org.yaml.snakeyaml.DumperOptions;
 
 import jakarta.json.stream.JsonGenerationException;
 import jakarta.json.stream.JsonGenerator;
@@ -171,6 +173,37 @@ class YamlGeneratorTest {
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
     void testExplicitDocumentStart(String version) {
+        Object config;
+
+        if (Yaml.Versions.V1_1.endsWith(version)) {
+            DumperOptions opt = new DumperOptions();
+            opt.setExplicitStart(true);
+            config = opt;
+        } else {
+            config = DumpSettings.builder()
+                    .setExplicitStart(true)
+                    .build();
+        }
+
+        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_CONFIG, config,
+                                                                          Yaml.Settings.YAML_VERSION, version));
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = factory.createGenerator(writer)) {
+            generator.writeStartObject()
+                .write("testKey", "testValue")
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals("---\ntestKey: testValue\n", writer.toString());
+    }
+
+    @Deprecated
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testExplicitDocumentStartWithDeprecatedProperty(String version) {
         JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_START, "true",
                                                                           Yaml.Settings.YAML_VERSION, version));
         StringWriter writer = new StringWriter();
@@ -189,6 +222,38 @@ class YamlGeneratorTest {
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
     void testExplicitDocumentEnd(String version) {
+        Object config;
+
+        if (Yaml.Versions.V1_1.endsWith(version)) {
+            DumperOptions opt = new DumperOptions();
+            opt.setExplicitEnd(true);
+            config = opt;
+        } else {
+            config = DumpSettings.builder()
+                    .setExplicitEnd(true)
+                    .build();
+        }
+
+        JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_CONFIG, config,
+                                                                          Yaml.Settings.YAML_VERSION, version));
+
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = factory.createGenerator(writer)) {
+            generator.writeStartObject()
+                .write("testKey", "testValue")
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals("testKey: testValue\n...\n", writer.toString());
+    }
+
+    @Deprecated
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testExplicitDocumentEndWithDeprecatedProperty(String version) {
         JsonGeneratorFactory factory = Yaml.createGeneratorFactory(Map.of(Yaml.Settings.DUMP_EXPLICIT_END, "true",
                                                                           Yaml.Settings.YAML_VERSION, version));
         StringWriter writer = new StringWriter();

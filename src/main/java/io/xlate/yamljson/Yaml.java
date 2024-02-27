@@ -110,7 +110,6 @@ public final class Yaml {
          *
          * @see Versions#V1_1
          * @see Versions#V1_2
-         *
          */
         public static final String YAML_VERSION = "io.xlate.yamljson.YAML_VERSION";
 
@@ -128,17 +127,30 @@ public final class Yaml {
          * @see org.snakeyaml.engine.v2.api.LoadSettingsBuilder#setUseMarks(boolean)
          *
          * @since 0.1.0
+         * @deprecated use
+         *             {@link org.snakeyaml.engine.v2.api.LoadSettingsBuilder#setUseMarks(boolean)
+         *             LoadSettingsBuilder#setUseMarks} with
+         *             {@link #LOAD_CONFIG} to configure this option.
          */
-        public static final String LOAD_USE_MARKS = "LOAD_USE_MARKS";
+        @Deprecated(since = "0.2", forRemoval = true)
+        public static final String LOAD_USE_MARKS = "LOAD_USE_MARKS"; // NOSONAR
 
         /**
-         * Set to true if the document start must be explicitly indicated by adding
-         * {@code ---} at the beginning of the document.
+         * Set to true if the document start must be explicitly indicated by
+         * adding {@code ---} at the beginning of the document.
          *
          * @see org.yaml.snakeyaml.DumperOptions#setExplicitStart(boolean)
          * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitStart(boolean)
+         *
+         * @deprecated use
+         *             {@link org.yaml.snakeyaml.DumperOptions#setExplicitStart(boolean)
+         *             DumperOptions#setExplicitStart} or
+         *             {@link org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitStart(boolean)
+         *             DumpSettingsBuilder#setExplicitStart} with
+         *             {@link #DUMP_CONFIG} to configure this option.
          */
-        public static final String DUMP_EXPLICIT_START = "DUMP_EXPLICIT_START";
+        @Deprecated(since = "0.2", forRemoval = true)
+        public static final String DUMP_EXPLICIT_START = "DUMP_EXPLICIT_START"; // NOSONAR
 
         /**
          * Set to true if the document end must be explicitly indicated by
@@ -146,8 +158,37 @@ public final class Yaml {
          *
          * @see org.yaml.snakeyaml.DumperOptions#setExplicitEnd(boolean)
          * @see org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitEnd(boolean)
+         *
+         * @deprecated use
+         *             {@link org.yaml.snakeyaml.DumperOptions#setExplicitEnd(boolean)
+         *             DumperOptions#setExplicitEnd} or
+         *             {@link org.snakeyaml.engine.v2.api.DumpSettingsBuilder#setExplicitEnd(boolean)
+         *             DumpSettingsBuilder#setExplicitEnd} with
+         *             {@link #DUMP_CONFIG} to configure this option.
          */
-        public static final String DUMP_EXPLICIT_END = "DUMP_EXPLICIT_END";
+        @Deprecated(since = "0.2", forRemoval = true)
+        public static final String DUMP_EXPLICIT_END = "DUMP_EXPLICIT_END"; // NOSONAR
+
+        /**
+         * Used to pass a pre-configured
+         * {@linkplain org.yaml.snakeyaml.LoaderOptions LoaderOptions} or
+         * {@linkplain org.snakeyaml.engine.v2.api.LoadSettings LoadSettings}
+         * instance for use when reading or parsing YAML.
+         *
+         * @since 0.2
+         */
+        public static final String LOAD_CONFIG = "io.xlate.yamljson.LOAD_CONFIG";
+
+        /**
+         * Used to pass a pre-configured
+         * {@linkplain org.yaml.snakeyaml.DumperOptions DumperOptions} or
+         * {@linkplain org.snakeyaml.engine.v2.api.DumpSettings DumpSettings}
+         * instance for use when writing or generating YAML.
+         *
+         * @since 0.2
+         */
+        public static final String DUMP_CONFIG = "io.xlate.yamljson.DUMP_CONFIG";
+
     }
 
     private static final YamlProvider PROVIDER = new YamlProvider();
