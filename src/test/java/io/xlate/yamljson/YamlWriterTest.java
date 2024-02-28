@@ -75,6 +75,6 @@ class YamlWriterTest {
             assertThrows(IllegalStateException.class, () -> writer.write(value));
         }
 
-        assertEquals("- '#http://example.com'\n", new String(stream.toByteArray(), StandardCharsets.UTF_8));
+        assertEquals("- \"#http://example.com\"\n", new String(stream.toByteArray(), StandardCharsets.UTF_8));
     }
 }

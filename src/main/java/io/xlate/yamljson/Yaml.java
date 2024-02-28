@@ -91,6 +91,8 @@ public final class Yaml {
      */
     public static final class Settings {
 
+        private static final String PRE = "io.xlate.yamljson.";
+
         private Settings() {
         }
 
@@ -111,7 +113,7 @@ public final class Yaml {
          * @see Versions#V1_1
          * @see Versions#V1_2
          */
-        public static final String YAML_VERSION = "io.xlate.yamljson.YAML_VERSION";
+        public static final String YAML_VERSION = PRE + "YAML_VERSION";
 
         /**
          * The maximum number of scalars to which an alias (or chain of aliases via arrays/objects)
@@ -177,7 +179,7 @@ public final class Yaml {
          *
          * @since 0.2
          */
-        public static final String LOAD_CONFIG = "io.xlate.yamljson.LOAD_CONFIG";
+        public static final String LOAD_CONFIG = PRE + "LOAD_CONFIG";
 
         /**
          * Used to pass a pre-configured
@@ -187,8 +189,52 @@ public final class Yaml {
          *
          * @since 0.2
          */
-        public static final String DUMP_CONFIG = "io.xlate.yamljson.DUMP_CONFIG";
+        public static final String DUMP_CONFIG = PRE + "DUMP_CONFIG";
 
+        /**
+         * Whether strings will be rendered without quotes (true) or with quotes
+         * (false, default).
+         * <p>
+         * Minimized quote usage makes for more human readable output; however,
+         * content is limited to printable characters according to the rules of
+         * <a href=
+         * "http://www.yaml.org/spec/1.2/spec.html#style/block/literal">literal
+         * block style</a>.
+         *
+         * @since 0.2
+         */
+        public static final String DUMP_MINIMIZE_QUOTES = PRE + "DUMP_MINIMIZE_QUOTES";
+
+        /**
+         * Whether numeric values stored as strings will be rendered with quotes
+         * (true, default) or without quotes (false) when
+         * {@link #DUMP_MINIMIZE_QUOTES} is enabled.
+         *
+         * @since 0.2
+         */
+        public static final String DUMP_QUOTE_NUMERIC_STRINGS = PRE + "DUMP_QUOTE_NUMERIC_STRINGS";
+
+        /**
+         * Whether strings containing newlines should use <a href=
+         * "http://www.yaml.org/spec/1.2/spec.html#style/block/literal">literal
+         * block style</a>. This automatically enabled when
+         * {@link #DUMP_MINIMIZE_QUOTES} is set.
+         *
+         * @since 0.2
+         */
+        public static final String DUMP_LITERAL_BLOCK_STYLE = PRE + "DUMP_LITERAL_BLOCK_STYLE";
+
+        /**
+         * Feature that determines whether {@link java.math.BigDecimal} entries are
+         * serialized using {@link java.math.BigDecimal#toPlainString()} to prevent
+         * values to be written using scientific notation.
+         *<p>
+         * Feature is disabled by default, so default output mode is used; this generally
+         * depends on how {@link java.math.BigDecimal} has been created.
+         *
+         * @since 0.2
+         */
+        public static final String DUMP_WRITE_PLAIN_BIGDECIMAL = PRE + "DUMP_WRITE_PLAIN_BIGDECIMAL";
     }
 
     private static final YamlProvider PROVIDER = new YamlProvider();

@@ -6,7 +6,10 @@ package io.xlate.yamljson;
  */
 class StringQuotingChecker {
 
-    StringQuotingChecker() {
+    private final boolean quoteNumericStrings;
+
+    StringQuotingChecker(boolean quoteNumericStrings) {
+        this.quoteNumericStrings = quoteNumericStrings;
     }
 
     /**
@@ -14,7 +17,7 @@ class StringQuotingChecker {
      * from being read as non-String key (boolean or number)
      */
     boolean needToQuoteName(String name) {
-        return isReservedKeyword(name) || YamlNumbers.isFloat(name);
+        return needToQuote(name, true);
     }
 
     /**
@@ -22,8 +25,13 @@ class StringQuotingChecker {
      * from being value of different type (boolean or number).
      */
     boolean needToQuoteValue(String value) {
-        // Only consider reserved keywords but not numbers?
-        return isReservedKeyword(value) || valueHasQuotableChar(value);
+        return needToQuote(value, quoteNumericStrings);
+    }
+
+    boolean needToQuote(String value, boolean quoteNumeric) {
+        return isReservedKeyword(value) ||
+                hasQuoteableCharacter(value) ||
+                (quoteNumeric && YamlNumbers.isNumeric(value));
     }
 
     /**
@@ -67,7 +75,7 @@ class StringQuotingChecker {
      * quoted in case they contain one of the following characters or character
      * combinations.
      */
-    boolean valueHasQuotableChar(String inputStr) {
+    boolean hasQuoteableCharacter(String inputStr) {
         final int end = inputStr.length();
         for (int i = 0; i < end; ++i) {
             switch (inputStr.charAt(i)) {

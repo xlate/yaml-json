@@ -25,6 +25,14 @@ final class YamlNumbers {
     private YamlNumbers() {
     }
 
+    static boolean isNumeric(String dataText) {
+        return isFloat(dataText) || isSpecial(dataText);
+    }
+
+    static boolean isSpecial(String dataText) {
+        return YamlParser.VALUES_INFINITY.contains(dataText) || YamlParser.VALUES_NAN.contains(dataText);
+    }
+
     static boolean isInteger(String dataText) {
         final int start;
 

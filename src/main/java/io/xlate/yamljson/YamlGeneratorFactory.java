@@ -109,11 +109,11 @@ class YamlGeneratorFactory implements JsonGeneratorFactory, SettingsBuilder {
 
         if (useSnakeYamlEngine) {
             var settings = (org.snakeyaml.engine.v2.api.DumpSettings) this.snakeYamlSettings;
-            return new SnakeYamlEngineGenerator(settings, writer);
+            return new SnakeYamlEngineGenerator(properties, settings, writer);
         }
 
         var settings = (org.yaml.snakeyaml.DumperOptions) this.snakeYamlSettings;
-        return new SnakeYamlGenerator(settings, writer);
+        return new SnakeYamlGenerator(properties, settings, writer);
     }
 
     @Override
