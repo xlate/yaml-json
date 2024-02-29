@@ -245,7 +245,7 @@ class YamlGeneratorTest {
                 + "  DoubleQuote: Contains only \"\n"
                 + "  \"100\": Numeric key\n"
                 + "  empty: \"\"\n"
-                + "  blank: ' '\n"
+                + "  blank: \" \"\n"
                 + "  positiveInfinity: .inf\n"
                 + "  negativeInfinity: -.inf\n"
                 + "  NaN: .nan\n",
@@ -390,7 +390,7 @@ class YamlGeneratorTest {
 
         try (JsonGenerator generator = createGenerator(config, writer)) {
             generator.writeStartObject()
-                .write("#keywithhash", "value with: colon")
+                .write("#keywithhash", "value with:\tcolon")
                 .write("#anotherwithhash", "value with:colon but the :is not followed by a space")
                 .write("key with spaces", "ends with colon:")
                 .write("key\twith\ttabs", "ends with hash (preceded by space) #")
@@ -399,14 +399,16 @@ class YamlGeneratorTest {
                 .write(".inf", "Key is infinite")
                 .write(".NAN", "Key is not a number!")
                 .write("false", "Key is reserved word")
-                .write("array[]", "Key has indicators")
+                .write("array[]", "Key has indicators, but not inside of a flow collection")
+                .write("? question", "Key has leading indicator followed by space")
+                .write("\ttab first", "Key with leading tab (special character) is quoted")
                 .writeEnd();
 
             writer.flush();
         }
 
         assertEquals(""
-                + "\"#keywithhash\": \"value with: colon\"\n"
+                + "\"#keywithhash\": \"value with:\\tcolon\"\n"
                 + "\"#anotherwithhash\": value with:colon but the :is not followed by a space\n"
                 + "key with spaces: \"ends with colon:\"\n"
                 // snakeyaml* adds quotes due to `\t`
@@ -416,7 +418,9 @@ class YamlGeneratorTest {
                 + "\".inf\": Key is infinite\n"
                 + "\".NAN\": Key is not a number!\n"
                 + "\"false\": Key is reserved word\n"
-                + "\"array[]\": Key has indicators\n",
+                + "array[]: Key has indicators, but not inside of a flow collection\n"
+                + "\"? question\": Key has leading indicator followed by space\n"
+                + "\"\\ttab first\": Key with leading tab (special character) is quoted\n",
                 writer.toString());
     }
 

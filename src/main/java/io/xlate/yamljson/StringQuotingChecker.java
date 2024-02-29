@@ -29,7 +29,8 @@ class StringQuotingChecker {
     }
 
     boolean needToQuote(String value, boolean quoteNumeric) {
-        return isReservedKeyword(value) ||
+        return value.isEmpty() ||
+                isReservedKeyword(value) ||
                 hasQuoteableCharacter(value) ||
                 (quoteNumeric && YamlNumbers.isNumeric(value));
     }
@@ -39,7 +40,6 @@ class StringQuotingChecker {
      * <ul>
      * <li>YAML 1.2 keyword representing boolean</li>
      * <li>YAML 1.2 keyword representing null value</li>
-     * <li>empty String (length 0)</li></li> and returns {@code true} if so.
      *
      * @param value
      *            String to check
@@ -48,10 +48,6 @@ class StringQuotingChecker {
      *         (as per YAML 1.2 specification) or empty String
      */
     boolean isReservedKeyword(String value) {
-        if (value.length() == 0) {
-            return true;
-        }
-
         switch (value.charAt(0)) {
         // First, reserved name starting chars:
         case 'f': // false
@@ -70,23 +66,24 @@ class StringQuotingChecker {
     }
 
     /**
-     * As per YAML <a href="https://yaml.org/spec/1.2/spec.html#id2788859">Plain
+     * As per YAML <a href="https://yaml.org/spec/1.2.2/#733-plain-style">Plain
      * Style</a>unquoted strings are restricted to a reduced charset and must be
      * quoted in case they contain one of the following characters or character
      * combinations.
      */
     boolean hasQuoteableCharacter(String inputStr) {
+        if (quotableLeadingCharacter(inputStr)) {
+            return true;
+        }
+
         final int end = inputStr.length();
-        for (int i = 0; i < end; ++i) {
-            switch (inputStr.charAt(i)) {
-            case '[':
-            case ']':
-            case '{':
-            case '}':
-            case ',':
-                return true;
+
+        for (int i = 1; i < end; ++i) {
+            int current = inputStr.charAt(i);
+
+            switch (current) {
             case '#':
-                if (precededByBlank(inputStr, i)) {
+                if (isBlank(inputStr.charAt(i - 1))) {
                     return true;
                 }
                 break;
@@ -96,17 +93,59 @@ class StringQuotingChecker {
                 }
                 break;
             default:
+                if (current < 0x20) {
+                    // Control character
+                    return true;
+                }
                 break;
             }
         }
-        return false;
+
+        // Check for trailing space
+        return isBlank(inputStr.charAt(end - 1));
     }
 
-    boolean precededByBlank(String inputStr, int offset) {
-        if (offset == 0) {
+    boolean quotableLeadingCharacter(String inputStr) {
+        final int first = inputStr.charAt(0);
+
+        switch (first) {
+        case ' ':
+            // Leading space
             return true;
+        case '#':
+        case ',':
+        case '[':
+        case ']':
+        case '{':
+        case '}':
+        case '&':
+        case '*':
+        case '!':
+        case '|':
+        case '>':
+        case '"':
+        case '%':
+        case '@':
+        case '`':
+            // Leading indicators
+            return true;
+        case '?':
+        case ':':
+        case '-':
+            // Leading indicators not followed by non-space "safe" character
+            if (followedByBlank(inputStr, 0)) {
+                return true;
+            }
+            break;
+        default:
+            if (first < 0x20) {
+                // Control character
+                return true;
+            }
+            break;
         }
-        return isBlank(inputStr.charAt(offset - 1));
+
+        return false;
     }
 
     boolean followedByBlank(String inputStr, int offset) {
