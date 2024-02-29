@@ -3,7 +3,7 @@
 
   <groupId>io.xlate</groupId>
   <artifactId>yaml-json</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1-SNAPSHOT</version>
 
   <name>yaml-json : JSON API for YAML</name>
   <description>Read and write YAML in Java using the Jakarta JSON API</description>
@@ -18,7 +18,7 @@
     <url>https://github.com/xlate/yaml-json</url>
     <connection>scm:git:https://github.com/xlate/yaml-json.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/xlate/yaml-json.git</developerConnection>
-    <tag>v0.2.0</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <licenses>
