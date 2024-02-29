@@ -68,16 +68,34 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
     }
 
     static final String VALUE = "value";
+    static final String FALSE = "false";
+    static final String TRUE = "true";
 
-    static final StringQuotingChecker quoteChecker = new StringQuotingChecker();
-
+    protected final Map<String, Object> properties;
     protected final Map<StyleType, S> styleTypes;
     protected final Writer writer;
-    final Deque<ContextType> context = new ArrayDeque<>();
 
-    YamlGenerator(Map<StyleType, S> styleTypes, Writer writer) {
+    private final Deque<ContextType> context = new ArrayDeque<>();
+    private final boolean minimizeQuotes;
+    private final boolean quoteNumericStrings;
+    private final boolean literalBlockStyle;
+    private final boolean writePlainBigDecimal;
+    private final StringQuotingChecker quoteChecker;
+
+    YamlGenerator(Map<String, Object> properties, Map<StyleType, S> styleTypes, Writer writer) {
+        this.properties = properties;
         this.styleTypes = styleTypes;
         this.writer = writer;
+        this.minimizeQuotes = parse(properties, Yaml.Settings.DUMP_MINIMIZE_QUOTES, FALSE);
+        this.quoteNumericStrings = parse(properties, Yaml.Settings.DUMP_QUOTE_NUMERIC_STRINGS, TRUE);
+        this.literalBlockStyle = parse(properties, Yaml.Settings.DUMP_LITERAL_BLOCK_STYLE, FALSE);
+        this.writePlainBigDecimal = parse(properties, Yaml.Settings.DUMP_WRITE_PLAIN_BIGDECIMAL, FALSE);
+        this.quoteChecker = new StringQuotingChecker(quoteNumericStrings);
+    }
+
+    static boolean parse(Map<String, Object> properties, String key, String defaultValue) {
+        Object value = properties.getOrDefault(key, defaultValue);
+        return Boolean.parseBoolean(String.valueOf(value));
     }
 
     protected abstract E getEvent(EventType type);
@@ -122,23 +140,22 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
             style = styleTypes.get(StyleType.PLAIN);
         } else {
             scalarValue = String.valueOf(value);
-            boolean containsNewLine = scalarValue.indexOf('\n') > -1;
-            boolean containsDoubleQuote = scalarValue.indexOf('"') > -1;
-            boolean containsSingleQuote = scalarValue.indexOf('\'') > -1;
 
-            if (containsNewLine) {
-                // XXX: Allow for folded scalar style via configuration
-                style = styleTypes.get(StyleType.LITERAL);
-            } else if (containsDoubleQuote && containsSingleQuote) {
-                style = styleTypes.get(StyleType.LITERAL);
-            } else if (containsDoubleQuote) {
-                style = styleTypes.get(StyleType.SINGLE_QUOTED);
-            } else if (containsSingleQuote) {
-                style = styleTypes.get(StyleType.DOUBLE_QUOTED);
-            } else if (quoteCheck.test(scalarValue)) {
-                style = styleTypes.get(StyleType.SINGLE_QUOTED);
+            if (minimizeQuotes) {
+                if (scalarValue.indexOf('\n') >= 0) {
+                    style = styleTypes.get(StyleType.LITERAL);
+                } else if (quoteCheck.test(scalarValue)) {
+                    // Preserve quotes for keywords, indicators, and numeric strings (if configured)
+                    style = styleTypes.get(StyleType.DOUBLE_QUOTED);
+                } else {
+                    style = styleTypes.get(StyleType.PLAIN);
+                }
             } else {
-                style = styleTypes.get(StyleType.PLAIN);
+                if (literalBlockStyle && scalarValue.indexOf('\n') >= 0) {
+                    style = styleTypes.get(StyleType.LITERAL);
+                } else {
+                    style = styleTypes.get(StyleType.DOUBLE_QUOTED);
+                }
             }
         }
 
@@ -329,7 +346,8 @@ abstract class YamlGenerator<E, S> implements JsonGenerator {
     @Override
     public JsonGenerator write(BigDecimal value) {
         Objects.requireNonNull(value, VALUE);
-        emitScalar(value);
+        Object stringValue = writePlainBigDecimal ? value.toPlainString() : value.toString();
+        emitScalar(stringValue);
         return this;
     }
 

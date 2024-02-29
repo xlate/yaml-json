@@ -136,6 +136,10 @@ final class YamlTestHelper {
 
     //////////
 
+    static JsonGenerator createGenerator(Map<String, ?> config, Writer writer) {
+        return Yaml.createGeneratorFactory(config).createGenerator(writer);
+    }
+
     static JsonGenerator createGenerator(String version, Writer writer) {
         if (isOnlySupportedVersion(version)) {
             return Yaml.createGenerator(writer);
@@ -150,6 +154,10 @@ final class YamlTestHelper {
         }
 
         return Yaml.createGeneratorFactory(Map.of(Yaml.Settings.YAML_VERSION, version)).createGenerator(stream);
+    }
+
+    static JsonGenerator createGenerator(Map<String, ?> config, OutputStream stream) {
+        return Yaml.createGeneratorFactory(config).createGenerator(stream);
     }
 
     //////////

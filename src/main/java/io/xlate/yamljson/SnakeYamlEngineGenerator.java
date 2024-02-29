@@ -67,14 +67,14 @@ class SnakeYamlEngineGenerator extends YamlGenerator<Event, ScalarStyle> impleme
     final DumpSettings settings;
     final Emitter emitter;
 
-    SnakeYamlEngineGenerator(DumpSettings settings, YamlWriterStream writer) {
-        super(STYLES, writer);
+    SnakeYamlEngineGenerator(Map<String, Object> properties, DumpSettings settings, YamlWriterStream writer) {
+        super(properties, STYLES, writer);
         this.settings = settings;
         this.emitter = new Emitter(settings, writer);
     }
 
-    SnakeYamlEngineGenerator(DumpSettings settings, Writer writer) {
-        this(settings, new YamlWriterStream(writer));
+    SnakeYamlEngineGenerator(Map<String, Object> properties, DumpSettings settings, Writer writer) {
+        this(properties, settings, new YamlWriterStream(writer));
     }
 
     @Override

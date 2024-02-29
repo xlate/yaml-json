@@ -21,20 +21,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Map;
+
+import jakarta.json.stream.JsonGenerationException;
+import jakarta.json.stream.JsonGenerator;
+import jakarta.json.stream.JsonGeneratorFactory;
 
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.snakeyaml.engine.v2.api.DumpSettings;
 import org.yaml.snakeyaml.DumperOptions;
-
-import jakarta.json.stream.JsonGenerationException;
-import jakarta.json.stream.JsonGenerator;
-import jakarta.json.stream.JsonGeneratorFactory;
 
 @DisabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
 class YamlGeneratorTest {
@@ -45,6 +47,25 @@ class YamlGeneratorTest {
         StringWriter writer = new StringWriter();
 
         try (JsonGenerator generator = createGenerator(version, writer)) {
+            generator.writeStartObject()
+                .write("testKey", "testValue")
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals("\"testKey\": \"testValue\"\n", writer.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSimpleWithQuotesMinimized(String version) {
+        StringWriter writer = new StringWriter();
+        Map<String, ?> config = Map.ofEntries(
+            Map.entry(Yaml.Settings.YAML_VERSION, version),
+            Map.entry(Yaml.Settings.DUMP_MINIMIZE_QUOTES, true));
+
+        try (JsonGenerator generator = createGenerator(config, writer)) {
             generator.writeStartObject()
                 .write("testKey", "testValue")
                 .writeEnd();
@@ -82,8 +103,78 @@ class YamlGeneratorTest {
     @MethodSource(VERSIONS_SOURCE)
     void testSequenceOfValues(String version) {
         StringWriter writer = new StringWriter();
+        writeSequenceOfValues(null, version, writer);
+        assertEquals("\"values\":\n"
+                + "- 3.14\n"
+                + "- 1000000\n"
+                + "- false\n"
+                + "- 2.71\n"
+                + "- 2021\n"
+                + "- 2022\n"
+                + "- \"Just a String\"\n"
+                + "- null\n"
+                + "- \"This line\\nspans multiple\\nlines\"\n"
+                + "- \"Contains both ' and \\\" (quote types)\"\n"
+                + "- \"Contains only '\"\n"
+                + "- \"Contains only \\\"\"\n"
+                + "- \"3.14\"\n",
+                writer.toString());
+    }
 
-        try (JsonGenerator generator = createGenerator(version, writer)) {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSequenceOfValuesWithLiteralBlockStyle(String version) {
+        StringWriter writer = new StringWriter();
+        Map<String, ?> config = Map.ofEntries(
+            Map.entry(Yaml.Settings.YAML_VERSION, version),
+            Map.entry(Yaml.Settings.DUMP_LITERAL_BLOCK_STYLE, true));
+        writeSequenceOfValues(config, null, writer);
+        assertEquals("\"values\":\n"
+                + "- 3.14\n"
+                + "- 1000000\n"
+                + "- false\n"
+                + "- 2.71\n"
+                + "- 2021\n"
+                + "- 2022\n"
+                + "- \"Just a String\"\n"
+                + "- null\n"
+                + "- |-\n  This line\n  spans multiple\n  lines\n"
+                + "- \"Contains both ' and \\\" (quote types)\"\n"
+                + "- \"Contains only '\"\n"
+                + "- \"Contains only \\\"\"\n"
+                + "- \"3.14\"\n",
+                writer.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testSequenceOfValuesWithQuotesMinimized(String version) {
+        StringWriter writer = new StringWriter();
+        Map<String, ?> config = Map.ofEntries(
+            Map.entry(Yaml.Settings.YAML_VERSION, version),
+            Map.entry(Yaml.Settings.DUMP_MINIMIZE_QUOTES, true));
+        writeSequenceOfValues(config, null, writer);
+        assertEquals("values:\n"
+                + "- 3.14\n"
+                + "- 1000000\n"
+                + "- false\n"
+                + "- 2.71\n"
+                + "- 2021\n"
+                + "- 2022\n"
+                + "- Just a String\n"
+                + "- null\n"
+                + "- |-\n  This line\n  spans multiple\n  lines\n"
+                + "- Contains both ' and \" (quote types)\n"
+                + "- Contains only '\n"
+                + "- Contains only \"\n"
+                + "- \"3.14\"\n",
+                writer.toString());
+    }
+
+    private void writeSequenceOfValues(Map<String, ?> config, String version, Writer writer) {
+        try (JsonGenerator generator = config != null ?
+                createGenerator(config, writer) :
+                createGenerator(version, writer)) {
             generator.writeStartObject()
                 .writeStartArray("values")
                     .write(new BigDecimal("3.14"))
@@ -98,35 +189,76 @@ class YamlGeneratorTest {
                     .write("Contains both ' and \" (quote types)")
                     .write("Contains only '")
                     .write("Contains only \"")
+                    .write("3.14") // string that looks like a number
                 .writeEnd()
             .writeEnd();
         }
-
-        assertEquals("values:\n"
-                + "- 3.14\n"
-                + "- 1000000\n"
-                + "- false\n"
-                + "- 2.71\n"
-                + "- 2021\n"
-                + "- 2022\n"
-                + "- Just a String\n"
-                + "- null\n"
-                + "- |-\n  This line\n  spans multiple\n  lines\n"
-                + "- |-\n  Contains both ' and \" (quote types)\n"
-                + "- \"Contains only '\"\n"
-                + "- 'Contains only \"'\n",
-                writer.toString());
     }
 
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
     void testMappingOfValues(String version) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        writeMappingOfValues(null, version, stream);
+        assertEquals("\"values\":\n"
+                + "  \"BigDecimal\": 3.141592653589793238E+19\n"
+                + "  \"BigInteger\": 1000000\n"
+                + "  \"Boolean\": true\n"
+                + "  \"double\": 2.71\n"
+                + "  \"int\": 2021\n"
+                + "  \"long\": 2022\n"
+                + "  \"String\": \"Just a String\"\n"
+                + "  \"Null\": null\n"
+                + "  \"Multiline\": \"This line\\nspans multiple\\nlines\"\n"
+                + "  \"MultilineQuotes\": \"Contains both ' and \\\" (quote types)\"\n"
+                + "  \"SingleQuote\": \"Contains only '\"\n"
+                + "  \"DoubleQuote\": \"Contains only \\\"\"\n"
+                + "  \"100\": \"Numeric key\"\n"
+                + "  \"empty\": \"\"\n"
+                + "  \"blank\": \" \"\n"
+                + "  \"positiveInfinity\": .inf\n"
+                + "  \"negativeInfinity\": -.inf\n"
+                + "  \"NaN\": .nan\n",
+                new String(stream.toByteArray()));
+    }
 
-        try (JsonGenerator generator = createGenerator(version, stream)) {
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testMappingOfValuesWithQuotesMinimized(String version) {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        Map<String, ?> config = Map.ofEntries(
+            Map.entry(Yaml.Settings.YAML_VERSION, version),
+            Map.entry(Yaml.Settings.DUMP_MINIMIZE_QUOTES, true));
+        writeMappingOfValues(config, null, stream);
+        assertEquals("values:\n"
+                + "  BigDecimal: 3.141592653589793238E+19\n"
+                + "  BigInteger: 1000000\n"
+                + "  Boolean: true\n"
+                + "  double: 2.71\n"
+                + "  int: 2021\n"
+                + "  long: 2022\n"
+                + "  String: Just a String\n"
+                + "  \"Null\": null\n"
+                + "  Multiline: |-\n    This line\n    spans multiple\n    lines\n"
+                + "  MultilineQuotes: Contains both ' and \" (quote types)\n"
+                + "  SingleQuote: Contains only '\n"
+                + "  DoubleQuote: Contains only \"\n"
+                + "  \"100\": Numeric key\n"
+                + "  empty: \"\"\n"
+                + "  blank: \" \"\n"
+                + "  positiveInfinity: .inf\n"
+                + "  negativeInfinity: -.inf\n"
+                + "  NaN: .nan\n",
+                new String(stream.toByteArray()));
+    }
+
+    private void writeMappingOfValues(Map<String, ?> config, String version, OutputStream stream) {
+        try (JsonGenerator generator = config != null ?
+                createGenerator(config, stream) :
+                createGenerator(version, stream)) {
             generator.writeStartObject()
                 .writeStartObject("values")
-                    .write("BigDecimal", new BigDecimal("3.14"))
+                    .write("BigDecimal", new BigDecimal("3.141592653589793238E19"))
                     .write("BigInteger", BigInteger.valueOf(1_000_000))
                     .write("Boolean", Boolean.TRUE)
                     .write("double", 2.71d)
@@ -136,8 +268,8 @@ class YamlGeneratorTest {
                     .writeNull("Null")
                     .write("Multiline", "This line\nspans multiple\nlines")
                     .write("MultilineQuotes", "Contains both ' and \" (quote types)")
-                    .write("DoubleQuoted", "Contains only '")
-                    .write("SingleQuoted", "Contains only \"")
+                    .write("SingleQuote", "Contains only '")
+                    .write("DoubleQuote", "Contains only \"")
                     .write("100", "Numeric key")
                     .write("empty", "")
                     .write("blank", " ")
@@ -147,27 +279,6 @@ class YamlGeneratorTest {
                 .writeEnd()
             .writeEnd();
         }
-
-        assertEquals("values:\n"
-                + "  BigDecimal: 3.14\n"
-                + "  BigInteger: 1000000\n"
-                + "  Boolean: true\n"
-                + "  double: 2.71\n"
-                + "  int: 2021\n"
-                + "  long: 2022\n"
-                + "  String: Just a String\n"
-                + "  'Null': null\n"
-                + "  Multiline: |-\n    This line\n    spans multiple\n    lines\n"
-                + "  MultilineQuotes: |-\n    Contains both ' and \" (quote types)\n"
-                + "  DoubleQuoted: \"Contains only '\"\n"
-                + "  SingleQuoted: 'Contains only \"'\n"
-                + "  '100': Numeric key\n"
-                + "  empty: ''\n"
-                + "  blank: ' '\n"
-                + "  positiveInfinity: .inf\n"
-                + "  negativeInfinity: -.inf\n"
-                + "  NaN: .nan\n",
-                new String(stream.toByteArray()));
     }
 
     @ParameterizedTest
@@ -197,7 +308,7 @@ class YamlGeneratorTest {
             writer.flush();
         }
 
-        assertEquals("---\ntestKey: testValue\n", writer.toString());
+        assertEquals("---\n\"testKey\": \"testValue\"\n", writer.toString());
     }
 
     @Deprecated
@@ -216,7 +327,7 @@ class YamlGeneratorTest {
             writer.flush();
         }
 
-        assertEquals("---\ntestKey: testValue\n", writer.toString());
+        assertEquals("---\n\"testKey\": \"testValue\"\n", writer.toString());
     }
 
     @ParameterizedTest
@@ -247,7 +358,7 @@ class YamlGeneratorTest {
             writer.flush();
         }
 
-        assertEquals("testKey: testValue\n...\n", writer.toString());
+        assertEquals("\"testKey\": \"testValue\"\n...\n", writer.toString());
     }
 
     @Deprecated
@@ -266,34 +377,115 @@ class YamlGeneratorTest {
             writer.flush();
         }
 
-        assertEquals("testKey: testValue\n...\n", writer.toString());
+        assertEquals("\"testKey\": \"testValue\"\n...\n", writer.toString());
     }
 
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
     void testSpecialStringsQuoted(String version) {
         StringWriter writer = new StringWriter();
+        Map<String, ?> config = Map.ofEntries(
+            Map.entry(Yaml.Settings.YAML_VERSION, version),
+            Map.entry(Yaml.Settings.DUMP_MINIMIZE_QUOTES, true));
 
-        try (JsonGenerator generator = createGenerator(version, writer)) {
+        try (JsonGenerator generator = createGenerator(config, writer)) {
             generator.writeStartObject()
-                .write("#keywithhash", "value with: colon")
+                .write("#keywithhash", "value with:\tcolon")
                 .write("#anotherwithhash", "value with:colon but the :is not followed by a space")
                 .write("key with spaces", "ends with colon:")
-                .write("key\twith\ttabs", "ends with hash #")
+                .write("key\twith\ttabs", "ends with hash (preceded by space) #")
                 .write("hash# in the middle", "#hash at the start of the value")
                 .write("hash\t# with tab", "value with hash (#) preceded by tab\t#")
+                .write(".inf", "Key is infinite")
+                .write(".NAN", "Key is not a number!")
+                .write("false", "Key is reserved word")
+                .write("array[]", "Key has indicators, but not inside of a flow collection")
+                .write("? question", "Key has leading indicator followed by space")
+                .write("\ttab first", "Key with leading tab (special character) is quoted")
                 .writeEnd();
 
             writer.flush();
         }
 
         assertEquals(""
-                + "'#keywithhash': 'value with: colon'\n"
-                + "'#anotherwithhash': value with:colon but the :is not followed by a space\n"
-                + "key with spaces: 'ends with colon:'\n"
-                + "\"key\\twith\\ttabs\": 'ends with hash #'\n"
-                + "hash# in the middle: '#hash at the start of the value'\n"
-                + "\"hash\\t# with tab\": \"value with hash (#) preceded by tab\\t#\"\n",
+                + "\"#keywithhash\": \"value with:\\tcolon\"\n"
+                + "\"#anotherwithhash\": value with:colon but the :is not followed by a space\n"
+                + "key with spaces: \"ends with colon:\"\n"
+                // snakeyaml* adds quotes due to `\t`
+                + "\"key\\twith\\ttabs\": \"ends with hash (preceded by space) #\"\n"
+                + "hash# in the middle: \"#hash at the start of the value\"\n"
+                + "\"hash\\t# with tab\": \"value with hash (#) preceded by tab\\t#\"\n"
+                + "\".inf\": Key is infinite\n"
+                + "\".NAN\": Key is not a number!\n"
+                + "\"false\": Key is reserved word\n"
+                + "array[]: Key has indicators, but not inside of a flow collection\n"
+                + "\"? question\": Key has leading indicator followed by space\n"
+                + "\"\\ttab first\": Key with leading tab (special character) is quoted\n",
                 writer.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testNumericStringsUnquotedWithConfiguration(String version) {
+        StringWriter writer = new StringWriter();
+        Map<String, ?> config = Map.ofEntries(
+            Map.entry(Yaml.Settings.YAML_VERSION, version),
+            Map.entry(Yaml.Settings.DUMP_MINIMIZE_QUOTES, true),
+            Map.entry(Yaml.Settings.DUMP_QUOTE_NUMERIC_STRINGS, false));
+
+        try (JsonGenerator generator = createGenerator(config, writer)) {
+            generator.writeStartObject()
+                .write(".inf", "Key is infinite")
+                .write("ValueIsInfinite", "-.INF")
+                .write(".NAN", "Key is not a number!")
+                .write("ValueIsNotNumber", ".NaN")
+                .write("ValueIsNumber", new BigDecimal("3.14").toString())
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals(""
+                + "\".inf\": Key is infinite\n"
+                + "ValueIsInfinite: -.INF\n"
+                + "\".NAN\": Key is not a number!\n"
+                + "ValueIsNotNumber: .NaN\n"
+                + "ValueIsNumber: 3.14\n",
+                writer.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testBigDecimalValueSerializedPlain(String version) {
+        StringWriter writer = new StringWriter();
+        Map<String, ?> config = Map.ofEntries(
+            Map.entry(Yaml.Settings.YAML_VERSION, version),
+            Map.entry(Yaml.Settings.DUMP_WRITE_PLAIN_BIGDECIMAL, true));
+
+        try (JsonGenerator generator = createGenerator(config, writer)) {
+            generator.writeStartObject()
+                .write("pi-e19", new BigDecimal("3.141592653589793238E19"))
+                .writeEnd();
+
+            writer.flush();
+        }
+
+        assertEquals(""
+                + "\"pi-e19\": 31415926535897932380\n",
+                writer.toString());
+    }
+
+    @ParameterizedTest
+    @MethodSource(VERSIONS_SOURCE)
+    void testWriteEndWithoutContextThrowsException(String version) {
+        StringWriter writer = new StringWriter();
+
+        try (JsonGenerator generator = createGenerator(version, writer)) {
+            generator.writeStartObject()
+                .write("somekey", "somevalue")
+                .writeEnd();
+
+            assertThrows(JsonGenerationException.class, () -> generator.writeEnd());
+        }
     }
 }

@@ -65,8 +65,8 @@ class SnakeYamlGenerator extends YamlGenerator<Event, ScalarStyle> implements Js
     final DumperOptions settings;
     final Emitter emitter;
 
-    SnakeYamlGenerator(DumperOptions settings, Writer writer) {
-        super(STYLES, writer);
+    SnakeYamlGenerator(Map<String, Object> properties, DumperOptions settings, Writer writer) {
+        super(properties, STYLES, writer);
         this.settings = settings;
         this.emitter = new Emitter(writer, settings);
     }
