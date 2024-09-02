@@ -233,6 +233,8 @@ class YamlParserTest {
         Reader proxy = Mockito.mock(Reader.class);
 
         Mockito.doThrow(IOException.class).when(proxy).read(Mockito.any(char[].class), Mockito.anyInt(), Mockito.anyInt());
+        // Needed for snakeyaml 2.3+
+        Mockito.doCallRealMethod().when(proxy).read(Mockito.any(char[].class));
         Mockito.doThrow(IOException.class).when(proxy).close();
         IOException closeException = null;
 
