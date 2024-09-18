@@ -62,7 +62,7 @@
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.javax.json-api>1.1.4</version.javax.json-api>
     <version.snakeyaml>2.3</version.snakeyaml>
-    <version.snakeyaml-engine>2.7</version.snakeyaml-engine>
+    <version.snakeyaml-engine>2.8</version.snakeyaml-engine>
 
     <version.junit-jupiter>5.11.0</version.junit-jupiter>
     <version.parsson>1.1.7</version.parsson>
