@@ -304,6 +304,16 @@
 
   <profiles>
     <profile>
+      <id>preJdk17</id>
+      <activation>
+        <jdk>[11,17)</jdk>
+      </activation>
+      <properties>
+        <version.junit-jupiter>5.13.4</version.junit-jupiter>
+      </properties>
+    </profile>
+
+    <profile>
       <id>legacy</id>
       <dependencies>
         <dependency>
