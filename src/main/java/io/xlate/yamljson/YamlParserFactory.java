@@ -36,18 +36,16 @@ import jakarta.json.stream.JsonParser;
 import jakarta.json.stream.JsonParserFactory;
 
 import org.snakeyaml.engine.v2.api.LoadSettings;
+import org.snakeyaml.engine.v2.events.Event;
+import org.snakeyaml.engine.v2.parser.ParserImpl;
+import org.snakeyaml.engine.v2.scanner.StreamReader;
 import org.yaml.snakeyaml.LoaderOptions;
 
 class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
-    private static final String SNAKEYAML_ENGINE_PROVIDER = "org.snakeyaml.engine.v2.api.lowlevel.Parse";
-
     static final Function<Map<String, Object>, Object> SNAKEYAML_FACTORY =
             // No load properties supported currently
             props -> new org.yaml.snakeyaml.Yaml(buildLoaderOptions(props));
-
-    static final Function<Map<String, Object>, Object> SNAKEYAML_ENGINE_FACTORY =
-            props -> new org.snakeyaml.engine.v2.api.lowlevel.Parse(buildLoadSettings(props));
 
     static LoaderOptions buildLoaderOptions(Map<String, Object> properties) {
         return Optional.ofNullable(properties.get(Yaml.Settings.LOAD_CONFIG))
@@ -55,14 +53,30 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
                 .orElseGet(LoaderOptions::new);
     }
 
-    @SuppressWarnings("removal")
-    static LoadSettings buildLoadSettings(Map<String, Object> properties) {
-        return Optional.ofNullable(properties.get(Yaml.Settings.LOAD_CONFIG))
-                .map(LoadSettings.class::cast)
-                .orElseGet(() -> LoadSettings.builder()
-                        .setUseMarks(getProperty(properties, Yaml.Settings.LOAD_USE_MARKS, Boolean::valueOf, true))
-                        .build());
+    private static final class SnakeYamlEngineFactory {
+        private final LoadSettings settings;
+
+        private SnakeYamlEngineFactory(Map<String, Object> props) {
+            this.settings = buildLoadSettings(props);
+        }
+
+        private Iterable<Event> parseReader(Reader yaml) {
+            Objects.requireNonNull(yaml, "Reader cannot be null");
+            return () -> new ParserImpl(settings, new StreamReader(settings, yaml));
+        }
+
+        @SuppressWarnings("removal")
+        static LoadSettings buildLoadSettings(Map<String, Object> properties) {
+            return Optional.ofNullable(properties.get(Yaml.Settings.LOAD_CONFIG))
+                    .map(LoadSettings.class::cast)
+                    .orElseGet(() -> LoadSettings.builder()
+                            .setUseMarks(getProperty(properties, Yaml.Settings.LOAD_USE_MARKS, Boolean::valueOf, true))
+                            .build());
+        }
     }
+
+    static final Function<Map<String, Object>, Object> SNAKEYAML_ENGINE_FACTORY =
+            SnakeYamlEngineFactory::new;
 
     private final Map<String, Object> properties;
     private final boolean useSnakeYamlEngine;
@@ -80,7 +94,7 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
                 .or(() -> loadProvider(this.properties, SNAKEYAML_ENGINE_FACTORY))
                 .orElseThrow(SettingsBuilder::noProvidersFound);
 
-            useSnakeYamlEngine = SNAKEYAML_ENGINE_PROVIDER.equals(snakeYamlProvider.getClass().getName());
+            useSnakeYamlEngine = snakeYamlProvider instanceof SnakeYamlEngineFactory;
         } else {
             useSnakeYamlEngine = Yaml.Versions.V1_2.equals(version);
 
@@ -105,7 +119,7 @@ class YamlParserFactory implements JsonParserFactory, SettingsBuilder {
 
     YamlParser<?, ?> createYamlParser(Reader reader) { // NOSONAR - ignore use of wildcards
         if (useSnakeYamlEngine) {
-            var provider = (org.snakeyaml.engine.v2.api.lowlevel.Parse) snakeYamlProvider;
+            var provider = (SnakeYamlEngineFactory) snakeYamlProvider;
             return new SnakeYamlEngineParser(provider.parseReader(reader).iterator(), reader, properties);
         }
 

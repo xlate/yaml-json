@@ -88,7 +88,7 @@
               <java.util.logging.config.file>${project.build.testOutputDirectory}/logging.properties</java.util.logging.config.file>
             </systemPropertyVariables>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED --add-modules=org.snakeyaml.engine.v2,org.yaml.snakeyaml ${argLine}</argLine>
+            <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED --add-modules=org.snakeyaml.engine,org.yaml.snakeyaml ${argLine}</argLine>
           </configuration>
         </plugin>
         <plugin>
@@ -170,7 +170,7 @@
               <classpathDependencyExcludes>
                 <classpathDependencyExclude>org.yaml:snakeyaml</classpathDependencyExclude>
               </classpathDependencyExcludes>
-              <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED --add-modules=org.snakeyaml.engine.v2 ${argLine}</argLine>
+              <argLine>--add-opens io.xlate.yamljson/io.xlate.yamljson=ALL-UNNAMED --add-modules=org.snakeyaml.engine ${argLine}</argLine>
             </configuration>
           </execution>
           <execution>

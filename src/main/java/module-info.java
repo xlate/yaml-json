@@ -28,7 +28,7 @@ module io.xlate.yamljson {
     requires java.logging;
     requires transitive jakarta.json;
 
-    requires static org.snakeyaml.engine.v2;
+    requires static org.snakeyaml.engine;
     requires static org.yaml.snakeyaml;
 
     exports io.xlate.yamljson;
