@@ -485,7 +485,7 @@ class YamlGeneratorTest {
                 .write("somekey", "somevalue")
                 .writeEnd();
 
-            assertThrows(JsonGenerationException.class, () -> generator.writeEnd());
+            assertThrows(JsonGenerationException.class, generator::writeEnd);
         }
     }
 }

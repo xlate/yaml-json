@@ -27,23 +27,18 @@ import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonWriter;
 
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
 @DisabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
 class YamlWriterTest {
-
-    @BeforeEach
-    void setUp() throws Exception {
-    }
 
     @ParameterizedTest
     @MethodSource(VERSIONS_SOURCE)
