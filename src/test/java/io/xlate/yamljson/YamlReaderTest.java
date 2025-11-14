@@ -31,17 +31,16 @@ import java.io.StringReader;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
-
 import jakarta.json.JsonException;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonParsingException;
+
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @DisabledIfSystemProperty(named = Yaml.Settings.YAML_VERSION, matches = "NONE")
 class YamlReaderTest {
@@ -51,10 +50,6 @@ class YamlReaderTest {
         OBJECT,
         ARRAY,
         SCALAR
-    }
-
-    @BeforeEach
-    void setUp() throws Exception {
     }
 
     void assertUnreadable(String version, String inputValue, Consumer<JsonReader> reader) throws IOException {
@@ -77,7 +72,7 @@ class YamlReaderTest {
         try (InputStream source = getClass().getResourceAsStream("/simpleapi.yaml");
                 JsonReader reader = createReader(version, source)) {
             object = reader.readObject();
-            assertThrows(IllegalStateException.class, () -> reader.read());
+            assertThrows(IllegalStateException.class, reader::read);
         }
 
         assertNotNull(object);
@@ -89,7 +84,7 @@ class YamlReaderTest {
         "Test array , ---%n- v1%n- v2, ARRAY, jakarta.json.JsonArray",
         "Test object, ---%nkey1: value1%nkey2: value2, OBJECT, jakarta.json.JsonObject",
     })
-    void testReadTypes(String label, String inputValue, ReadType readType, Class<?> expectedType) throws IOException {
+    void testReadTypes(String label, String inputValue, ReadType readType, Class<?> expectedType) {
         String formattedInputValue = String.format(inputValue);
 
         testEachVersion(version -> {
@@ -139,7 +134,7 @@ class YamlReaderTest {
 
         try (JsonReader reader = createReader(version, source)) {
             object = reader.readObject();
-            assertThrows(IllegalStateException.class, () -> reader.read());
+            assertThrows(IllegalStateException.class, reader::read);
         }
 
         assertNotNull(object);
@@ -159,7 +154,7 @@ class YamlReaderTest {
             JsonException thrown;
 
             try (JsonReader reader = createReader(version, source)) {
-                thrown = assertThrows(JsonException.class, () -> reader.readObject());
+                thrown = assertThrows(JsonException.class, reader::readObject);
             }
 
             assertEquals(errorMessage, thrown.getCause().getMessage());

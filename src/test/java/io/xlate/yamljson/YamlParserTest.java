@@ -146,7 +146,7 @@ class YamlParserTest {
             try (JsonParser parser = createParser(version, new StringReader(String.format(yaml)))) {
                 Event event = seekEvent(parser, nextCalls);
                 assertEquals(expected, event);
-                assertThrows(IllegalStateException.class, () -> parser.getString());
+                assertThrows(IllegalStateException.class, parser::getString);
             }
         });
     }
@@ -176,7 +176,7 @@ class YamlParserTest {
                 Event event = seekEvent(parser, nextCalls);
                 assertEquals(Event.VALUE_STRING, event);
                 assertEquals(expected, parser.getString());
-                assertThrows(IllegalStateException.class, () -> parser.getBigDecimal());
+                assertThrows(IllegalStateException.class, parser::getBigDecimal);
             }
         });
     }
@@ -209,7 +209,7 @@ class YamlParserTest {
         InputStream source = new ByteArrayInputStream(String.format("---%nkey\u0000%n").getBytes());
 
         try (JsonParser parser = createParser(version, source)) {
-            JsonParsingException thrown = assertThrows(JsonParsingException.class, () -> parser.next());
+            JsonParsingException thrown = assertThrows(JsonParsingException.class, parser::next);
             Throwable cause = thrown.getCause();
             assertNotNull(cause);
         }
@@ -223,7 +223,7 @@ class YamlParserTest {
         try (YamlParser<?, ?> parser = (YamlParser<?, ?>) createParser(version, source)) {
             parser.next();
             parser.next();
-            assertThrows(IllegalStateException.class, () -> parser.isInfinite());
+            assertThrows(IllegalStateException.class, parser::isInfinite);
         }
     }
 
@@ -239,7 +239,7 @@ class YamlParserTest {
         IOException closeException = null;
 
         try (JsonParser parser = createParser(version, proxy)) {
-            JsonException thrown = assertThrows(JsonException.class, () -> parser.next());
+            JsonException thrown = assertThrows(JsonException.class, parser::next);
             Throwable cause = thrown.getCause();
             assertNotNull(cause);
         } catch (JsonException e) {
@@ -322,7 +322,7 @@ class YamlParserTest {
     void testGetObjectWithInvalidContext(String version) throws IOException {
         try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
              JsonParser parser = createParser(version, source)) {
-            assertThrows(IllegalStateException.class, () -> parser.getObject());
+            assertThrows(IllegalStateException.class, parser::getObject);
         }
     }
 
@@ -437,7 +437,7 @@ class YamlParserTest {
     void testGetArrayWithInvalidContext(String version) throws IOException {
         try (InputStream source = getClass().getResourceAsStream("/test1.yaml");
              JsonParser parser = createParser(version, source)) {
-            assertThrows(IllegalStateException.class, () -> parser.getArray());
+            assertThrows(IllegalStateException.class, parser::getArray);
         }
     }
 
@@ -526,7 +526,7 @@ class YamlParserTest {
         try (InputStream source = getClass().getResourceAsStream("/merge-key-invalid.yaml");
                 JsonParser parser = createParser(version, source)) {
             parser.next();
-            Throwable thrown = assertThrows(JsonParsingException.class, () -> parser.getObject());
+            Throwable thrown = assertThrows(JsonParsingException.class, parser::getObject);
             assertTrue(thrown.getMessage().contains("Unable to expand merge key (<<)"));
         }
     }
